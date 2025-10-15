@@ -26,6 +26,56 @@ kit:
   list:
     title: "&6Available Kits"
     format: "&e- &f{kit}"
+  serializer:
+    unsupported-material: "&cSkipping unsupported item &e{material} &cwhile loading kit &e{kit}&c."
+  command:
+    help:
+      header: "&e&lHelektra - Kit Commands"
+      lines:
+        - "&7/kit create <name> &f- Create a kit from your inventory"
+        - "&7/kit delete <name> &f- Delete a kit"
+        - "&7/kit list &f- List every kit"
+        - "&7/kit info <name> &f- Show kit information"
+        - "&7/kit give <player> <kit> &f- Apply a kit to a player"
+        - "&7/kit rule <kit> <rule> <true|false> &f- Configure a rule"
+        - "&7/kit seticon <kit> &f- Set the kit icon"
+        - "&7/kit setslot <kit> <slot> &f- Set the kit slot"
+        - "&7/kit clone <source> <target> &f- Clone a kit"
+    exists: "&cKit '&e{kit}&c' already exists."
+    created: "&aKit '&e{kit}&a' created successfully."
+    deleted: "&aKit '&e{kit}&a' deleted."
+    list-empty: "&cNo kits are currently available."
+    list-header: "&e&lAvailable Kits &7({count})&e:"
+    list-entry: "  &7- &e{kit} &8| &7Queue: &b{queue} &7Playing: &a{playing}"
+    info:
+      title: "&e&l{display}"
+      name: "&7Name: &f{name}"
+      health: "&7Health: &c{health}"
+      damage: "&7Damage Multiplier: &6{damage}"
+      slot: "&7Slot: &b{slot}"
+      queue: "&7Queue: &e{queue}"
+      playing: "&7Playing: &a{playing}"
+      items: "&7Items: &f{count}"
+      potions: "&7Potion Effects: &d{count}"
+      arenas: "&7Arenas: &9{count}"
+      rules-header: "&7Rules:"
+      rule-status:
+        enabled: "&a✔"
+        disabled: "&c✘"
+      rule-format: "  {status} &7{rule}"
+    give:
+      sender: "&aKit '&e{kit}&a' applied to &e{player}&a."
+    rule:
+      invalid: "&cInvalid rule. Available rules:"
+      available-format: "  &7- &e{name} &8({rule})"
+      status:
+        enabled: "&aenabled"
+        disabled: "&cdisabled"
+      updated: "&aRule '&e{rule}&a' {status} &ain kit '&e{kit}&a'."
+    no-item: "&cYou must hold an item."
+    icon-updated: "&aIcon for kit '&e{kit}&a' updated."
+    slot-updated: "&aSlot for kit '&e{kit}&a' set to &e{slot}&a."
+    cloned: "&aKit '&e{source}&a' cloned as '&e{target}&a'."
 
 time:
   teleporting: "&f&lTELEPORTING"
@@ -84,7 +134,7 @@ arena:
   pool-scaled: "&aArena {id} pool scaled to {size} instances."
   pool-cleared: "&aArena {id} pool cleared."
   pool-invalid-action: "&cInvalid pool action. Use 'scale <size>' or 'clear'."
-  
+
   validation:
     no-selection: "No selection found"
     incomplete-region: "Region selection incomplete"

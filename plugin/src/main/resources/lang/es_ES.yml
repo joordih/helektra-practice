@@ -26,6 +26,56 @@ kit:
   list:
     title: "&6Kits Disponibles"
     format: "&e- &f{kit}"
+  serializer:
+    unsupported-material: "&cSe omitió el ítem &e{material} &cal cargar el kit &e{kit}&c (no disponible en esta versión)."
+  command:
+    help:
+      header: "&e&lHelektra - Comandos de Kit"
+      lines:
+        - "&7/kit create <nombre> &f- Crea un kit desde tu inventario"
+        - "&7/kit delete <nombre> &f- Elimina un kit"
+        - "&7/kit list &f- Lista todos los kits"
+        - "&7/kit info <nombre> &f- Información de un kit"
+        - "&7/kit give <jugador> <kit> &f- Aplica un kit a un jugador"
+        - "&7/kit rule <kit> <regla> <true|false> &f- Configura una regla"
+        - "&7/kit seticon <kit> &f- Establece el icono del kit"
+        - "&7/kit setslot <kit> <slot> &f- Establece el slot del kit"
+        - "&7/kit clone <origen> <nuevo> &f- Clona un kit"
+    exists: "&cEl kit '&e{kit}&c' ya existe."
+    created: "&aKit '&e{kit}&a' creado correctamente."
+    deleted: "&aKit '&e{kit}&a' eliminado."
+    list-empty: "&cNo hay kits disponibles."
+    list-header: "&e&lKits disponibles &7({count})&e:"
+    list-entry: "  &7- &e{kit} &8| &7Cola: &b{queue} &7Jugando: &a{playing}"
+    info:
+      title: "&e&l{display}"
+      name: "&7Nombre: &f{name}"
+      health: "&7Vida: &c{health}"
+      damage: "&7Multiplicador de Daño: &6{damage}"
+      slot: "&7Slot: &b{slot}"
+      queue: "&7En cola: &e{queue}"
+      playing: "&7Jugando: &a{playing}"
+      items: "&7Ítems: &f{count}"
+      potions: "&7Efectos de poción: &d{count}"
+      arenas: "&7Arenas: &9{count}"
+      rules-header: "&7Reglas:"
+      rule-status:
+        enabled: "&a✔"
+        disabled: "&c✘"
+      rule-format: "  {status} &7{rule}"
+    give:
+      sender: "&aKit '&e{kit}&a' aplicado a &e{player}&a."
+    rule:
+      invalid: "&cRegla no válida. Reglas disponibles:"
+      available-format: "  &7- &e{name} &8({rule})"
+      status:
+        enabled: "&ahabilitada"
+        disabled: "&cdeshabilitada"
+      updated: "&aRegla '&e{rule}&a' {status} &aen el kit '&e{kit}&a'."
+    no-item: "&cDebes tener un ítem en la mano."
+    icon-updated: "&aIcono del kit '&e{kit}&a' actualizado."
+    slot-updated: "&aSlot del kit '&e{kit}&a' establecido en &e{slot}&a."
+    cloned: "&aKit '&e{source}&a' clonado como '&e{target}&a'."
 
 time:
   teleporting: "&f&lTELETRANSPORTANDO"
@@ -84,7 +134,7 @@ arena:
   pool-scaled: "&aPool de arena {id} escalado a {size} instancias."
   pool-cleared: "&aPool de arena {id} limpiado."
   pool-invalid-action: "&cAcción de pool inválida. Usa 'scale <tamaño>' o 'clear'."
-  
+
   validation:
     no-selection: "No se encontró selección"
     incomplete-region: "Selección de región incompleta"
