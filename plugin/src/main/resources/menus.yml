@@ -264,6 +264,142 @@ kit-selector:
         - ""
         - "&fAvailable Kits&7: {count}"
 
+match-mode:
+  title: "&6Match Mode Selection"
+  size: 27
+  items:
+    unranked:
+      position: 11
+      material: IRON_SWORD
+      name: "&eUnranked Matches"
+      lore:
+        - "&7Play casual matches"
+        - "&7without ranking"
+        - ""
+        - "&eClick to browse"
+    ranked:
+      position: 15
+      material: DIAMOND_SWORD
+      name: "&cRanked Matches"
+      lore:
+        - "&7Compete for ranking"
+        - "&7and rewards"
+        - ""
+        - "&eClick to browse"
+
+unranked:
+  title: "&eUnranked Match Types"
+  size: 27
+  items:
+    duel:
+      position: 2
+      material: DIAMOND_SWORD
+      name: "&a1v1 Duel"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players} vs {min_players}"
+        - ""
+        - "&eClick to select kit"
+    queue:
+      position: 6
+      material: IRON_SWORD
+      name: "&aQueued 1v1"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players} vs {min_players}"
+        - ""
+        - "&eClick to select kit"
+    ffa:
+      position: 11
+      material: GOLDEN_SWORD
+      name: "&6Free For All"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players}-{max_players}"
+        - ""
+        - "&eClick to select kit"
+    range_rover:
+      position: 13
+      material: NETHERITE_SWORD
+      name: "&cRange Rover"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players}-{max_players}"
+        - ""
+        - "&eClick to select kit"
+    party_ffa:
+      position: 15
+      material: ENCHANTED_GOLDEN_APPLE
+      name: "&dParty FFA"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players}-{max_players}"
+        - ""
+        - "&eClick to select kit"
+
+ranked:
+  title: "&cRanked Match Types"
+  size: 27
+  items:
+    duel:
+      position: 2
+      material: DIAMOND_SWORD
+      name: "&a1v1 Ranked Duel"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players} vs {min_players}"
+        - ""
+        - "&eClick to select kit"
+    queue:
+      position: 6
+      material: IRON_SWORD
+      name: "&aQueued Ranked 1v1"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players} vs {min_players}"
+        - ""
+        - "&eClick to select kit"
+    ffa:
+      position: 11
+      material: GOLDEN_SWORD
+      name: "&6Ranked FFA"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players}-{max_players}"
+        - ""
+        - "&eClick to select kit"
+    range_rover:
+      position: 13
+      material: NETHERITE_SWORD
+      name: "&cRanked Range Rover"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players}-{max_players}"
+        - ""
+        - "&eClick to select kit"
+    party_ffa:
+      position: 15
+      material: ENCHANTED_GOLDEN_APPLE
+      name: "&dRanked Party FFA"
+      lore:
+        - "&fType&7: {type}"
+        - "&fPlayers&7: {min_players}-{max_players}"
+        - ""
+        - "&eClick to select kit"
+
+kit-selection:
+  title: "&6Kit Selection"
+  size: 54
+  items:
+    info:
+      position: 4
+      material: BOOK
+      name: "&eKit Information"
+      lore:
+        - "&7Select a kit to start your match"
+        - ""
+        - "&fAvailable Kits&7: {count}"
+
 # Profile loading messages
 profile:
   loading-title: "&eLoading Profile..."

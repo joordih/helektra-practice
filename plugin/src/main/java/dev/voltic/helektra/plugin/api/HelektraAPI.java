@@ -3,6 +3,7 @@ package dev.voltic.helektra.plugin.api;
 import dev.voltic.helektra.api.IHelektraAPI;
 import dev.voltic.helektra.api.model.arena.IArenaService;
 import dev.voltic.helektra.api.model.kit.IKitService;
+import dev.voltic.helektra.api.model.match.IMatchService;
 import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.scoreboard.IScoreboardService;
 import jakarta.inject.Inject;
@@ -19,6 +20,7 @@ public class HelektraAPI implements IHelektraAPI {
     private final IArenaService arenaService;
     private final IKitService kitService;
     private final IScoreboardService scoreboardService;
+    private final IMatchService matchService;
     
     private boolean ready = false;
     
@@ -27,11 +29,13 @@ public class HelektraAPI implements IHelektraAPI {
             IProfileService profileService,
             IArenaService arenaService,
             IKitService kitService,
-            IScoreboardService scoreboardService) {
+            IScoreboardService scoreboardService,
+            IMatchService matchService) {
         this.profileService = profileService;
         this.arenaService = arenaService;
         this.kitService = kitService;
         this.scoreboardService = scoreboardService;
+        this.matchService = matchService;
     }
     
     @Override

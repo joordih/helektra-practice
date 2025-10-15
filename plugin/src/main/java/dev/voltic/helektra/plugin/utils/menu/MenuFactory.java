@@ -3,9 +3,10 @@ package dev.voltic.helektra.plugin.utils.menu;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import org.bukkit.entity.Player;
 
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
+
+import org.bukkit.entity.Player;
 
 @Singleton
 public class MenuFactory {

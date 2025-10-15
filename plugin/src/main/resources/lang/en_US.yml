@@ -144,3 +144,17 @@ arena:
     low-height: "Arena height is very low (recommended at least 5 blocks)"
     spawn-a-outside: "Spawn A is outside the selected region"
     spawn-b-outside: "Spawn B is outside the selected region"
+
+error:
+  player-only: "&cThis command can only be executed by a player."
+
+match:
+  no-active-matches: "&cThere are no active matches."
+  active-matches-header: "&6Active Matches &7({count})"
+  active-match-format: "&e- {match}"
+  not-in-match: "&cYou are not in a match."
+  status-header: "&6Match Status: &e{type}"
+  status-participants: "&7Participants: &f{count}"
+  status-spectators: "&7Spectators: &f{count}"
+  spectator-left: "&aYou left the match as a spectator."
+  cannot-leave-participant: "&cYou cannot leave as a participant."

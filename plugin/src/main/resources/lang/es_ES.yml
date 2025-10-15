@@ -144,3 +144,17 @@ arena:
     low-height: "La altura de la arena es muy baja (recomendado al menos 5 bloques)"
     spawn-a-outside: "Spawn A está fuera de la región seleccionada"
     spawn-b-outside: "Spawn B está fuera de la región seleccionada"
+
+error:
+  player-only: "&cEste comando solo puede ser ejecutado por un jugador."
+
+match:
+  no-active-matches: "&cNo hay partidas activas."
+  active-matches-header: "&6Partidas Activas &7({count})"
+  active-match-format: "&e- {match}"
+  not-in-match: "&cNo estás en una partida."
+  status-header: "&6Estado de Partida: &e{type}"
+  status-participants: "&7Participantes: &f{count}"
+  status-spectators: "&7Espectadores: &f{count}"
+  spectator-left: "&aHas salido de la partida como espectador."
+  cannot-leave-participant: "&cNo puedes salir siendo participante."

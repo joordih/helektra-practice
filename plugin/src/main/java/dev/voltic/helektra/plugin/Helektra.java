@@ -10,13 +10,21 @@ import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.scoreboard.IScoreboardService;
 import dev.voltic.helektra.api.repository.RepositoryFactory;
 import dev.voltic.helektra.plugin.api.HelektraAPI;
-import dev.voltic.helektra.plugin.di.*;
+import dev.voltic.helektra.plugin.di.ArenaModule;
+import dev.voltic.helektra.plugin.di.KitModule;
+import dev.voltic.helektra.plugin.di.MatchModule;
+import dev.voltic.helektra.plugin.di.MongoModule;
+import dev.voltic.helektra.plugin.di.ProfileModule;
+import dev.voltic.helektra.plugin.di.ScoreboardModule;
+import dev.voltic.helektra.plugin.di.UtilsModule;
 import dev.voltic.helektra.plugin.listeners.PlayerListeners;
 import dev.voltic.helektra.plugin.model.arena.commands.ArenaCommand;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaBlockTrackingListener;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaProtectionListener;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaSelectionListener;
 import dev.voltic.helektra.plugin.model.kit.commands.KitCommand;
+import dev.voltic.helektra.plugin.model.match.commands.QueueCommand;
+import dev.voltic.helektra.plugin.model.match.listeners.MatchListener;
 import dev.voltic.helektra.plugin.model.profile.commands.SettingsCommand;
 import dev.voltic.helektra.plugin.model.scoreboard.wrapper.ScoreboardListener;
 import dev.voltic.helektra.plugin.model.scoreboard.wrapper.ScoreboardUpdater;
@@ -59,6 +67,7 @@ public final class Helektra extends JavaPlugin {
   private IKitService kitService;
   private IProfileService profileService;
   private IScoreboardService scoreboardService;
+  private dev.voltic.helektra.api.model.match.IMatchService matchService;
   private MenuFactory menuFactory;
   private BukkitAudiences adventure;
   private ScoreboardUpdater scoreboardUpdater;
@@ -130,6 +139,7 @@ public final class Helektra extends JavaPlugin {
       new UtilsModule(),
       new ArenaModule(),
       new ScoreboardModule(),
+      new MatchModule(),
       binder -> {
         binder.bind(Helektra.class).toInstance(this);
         binder.bind(JavaPlugin.class).toInstance(this);
@@ -142,6 +152,7 @@ public final class Helektra extends JavaPlugin {
     kitService = injector.getInstance(IKitService.class);
     profileService = injector.getInstance(IProfileService.class);
     scoreboardService = injector.getInstance(IScoreboardService.class);
+    matchService = injector.getInstance(dev.voltic.helektra.api.model.match.IMatchService.class);
     scoreboardUpdater = injector.getInstance(ScoreboardUpdater.class);
     api = injector.getInstance(HelektraAPI.class);
 
@@ -165,7 +176,8 @@ public final class Helektra extends JavaPlugin {
       ArenaSelectionListener.class,
       ArenaProtectionListener.class,
       ArenaBlockTrackingListener.class,
-      ScoreboardListener.class
+      ScoreboardListener.class,
+      MatchListener.class
     ).forEach(listenerClass -> {
       Object listener = injector.getInstance(listenerClass);
       Bukkit.getPluginManager().registerEvents((Listener) listener, this);
@@ -191,8 +203,11 @@ public final class Helektra extends JavaPlugin {
     manager.registerCommands(
       builder.fromClass(injector.getInstance(ArenaCommand.class))
     );
+    manager.registerCommands(
+      builder.fromClass(injector.getInstance(QueueCommand.class))
+    );
 
-    log("&aCommands registered successfully (Kits, Settings, Arena).");
+    log("&aCommands registered successfully (Kits, Settings, Arena, Queue).");
   }
 
   private void startScoreboard() {
