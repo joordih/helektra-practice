@@ -1,0 +1,258 @@
+package dev.voltic.helektra.plugin.model.arena;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.bukkit.Bukkit;
+
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+
+import dev.voltic.helektra.api.model.arena.Arena;
+import dev.voltic.helektra.api.model.arena.ArenaInstance;
+import dev.voltic.helektra.api.model.arena.IArenaPoolService;
+import dev.voltic.helektra.api.model.arena.IArenaResetService;
+import dev.voltic.helektra.api.model.arena.IArenaService;
+import dev.voltic.helektra.api.model.arena.IArenaTemplateService;
+import dev.voltic.helektra.api.model.arena.ISchedulerService;
+import dev.voltic.helektra.plugin.model.arena.event.BukkitArenaInstanceAssignedEvent;
+
+@Singleton
+@SuppressWarnings("unused")
+public class ArenaPoolService implements IArenaPoolService {
+  private final Map<String, ArenaPool> pools = new ConcurrentHashMap<>();
+  private final IArenaTemplateService templateService;
+  private final IArenaResetService resetService;
+  private final IArenaService arenaService;
+  private final ISchedulerService schedulerService;
+  private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+
+  @Inject
+  public ArenaPoolService(IArenaTemplateService templateService,
+      IArenaResetService resetService,
+      IArenaService arenaService,
+      ISchedulerService schedulerService) {
+    this.templateService = templateService;
+    this.resetService = resetService;
+    this.arenaService = arenaService;
+    this.schedulerService = schedulerService;
+  }
+
+  @Override
+  public CompletableFuture<ArenaInstance> acquire(String arenaId) {
+    long startTime = System.currentTimeMillis();
+
+    return getOrCreatePool(arenaId).thenCompose(pool -> {
+      ArenaInstance instance = pool.pollAvailable();
+
+      if (instance != null) {
+        instance.setState(ArenaInstance.ArenaInstanceState.IN_USE);
+        instance.setLastUsedAt(Instant.now());
+        instance.setUsageCount(instance.getUsageCount() + 1);
+
+        long waitTime = System.currentTimeMillis() - startTime;
+        Bukkit.getPluginManager().callEvent(
+            new BukkitArenaInstanceAssignedEvent(arenaId, instance, null, waitTime));
+
+        return CompletableFuture.completedFuture(instance);
+      }
+
+      return templateService.cloneFromTemplate(arenaId)
+          .thenApply(newInstance -> {
+            newInstance.setState(ArenaInstance.ArenaInstanceState.IN_USE);
+            newInstance.setLastUsedAt(Instant.now());
+            pool.addInstance(newInstance);
+
+            long waitTime = System.currentTimeMillis() - startTime;
+            Bukkit.getPluginManager().callEvent(
+                new BukkitArenaInstanceAssignedEvent(arenaId, newInstance, null, waitTime));
+
+            return newInstance;
+          });
+    });
+  }
+
+  @Override
+  public CompletableFuture<Void> release(ArenaInstance instance) {
+    ArenaPool pool = pools.get(instance.getArenaId());
+    if (pool == null) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    instance.setState(ArenaInstance.ArenaInstanceState.RESETTING);
+
+    return resetService.resetInstance(instance)
+        .thenAccept(v -> {
+          instance.setState(ArenaInstance.ArenaInstanceState.AVAILABLE);
+          pool.returnInstance(instance);
+        })
+        .exceptionally(ex -> {
+          Bukkit.getLogger().severe("Failed to reset arena instance: " + ex.getMessage());
+          instance.setState(ArenaInstance.ArenaInstanceState.CORRUPTED);
+          pool.removeInstance(instance);
+          return null;
+        });
+  }
+
+  @Override
+  public int getAvailableCount(String arenaId) {
+    ArenaPool pool = pools.get(arenaId);
+    return pool != null ? pool.getAvailableCount() : 0;
+  }
+
+  @Override
+  public int getInUseCount(String arenaId) {
+    ArenaPool pool = pools.get(arenaId);
+    return pool != null ? pool.getInUseCount() : 0;
+  }
+
+  @Override
+  public int getResettingCount(String arenaId) {
+    ArenaPool pool = pools.get(arenaId);
+    return pool != null ? pool.getResettingCount() : 0;
+  }
+
+  @Override
+  public List<ArenaInstance> getAllInstances(String arenaId) {
+    ArenaPool pool = pools.get(arenaId);
+    return pool != null ? pool.getAllInstances() : Collections.emptyList();
+  }
+
+  @Override
+  public void scalePool(String arenaId, int targetSize) {
+    getOrCreatePool(arenaId).thenAccept(pool -> {
+      int current = pool.getTotalCount();
+
+      if (targetSize > current) {
+        int toCreate = targetSize - current;
+        for (int i = 0; i < toCreate; i++) {
+          templateService.cloneFromTemplate(arenaId)
+              .thenAccept(pool::addInstance);
+        }
+      } else if (targetSize < current) {
+        int toRemove = current - targetSize;
+        pool.removeExcess(toRemove);
+      }
+    });
+  }
+
+  @Override
+  public void clearPool(String arenaId) {
+    ArenaPool pool = pools.remove(arenaId);
+    if (pool != null) {
+      pool.clear();
+    }
+  }
+
+  private CompletableFuture<ArenaPool> getOrCreatePool(String arenaId) {
+    if (pools.containsKey(arenaId)) {
+      return CompletableFuture.completedFuture(pools.get(arenaId));
+    }
+
+    return arenaService.getArena(arenaId)
+        .map(arena -> {
+          ArenaPool pool = new ArenaPool(arena);
+          pools.put(arenaId, pool);
+
+          int preloadCount = arena.getPoolConfig().getPreloaded();
+          List<CompletableFuture<Void>> preloadFutures = new ArrayList<>();
+
+          for (int i = 0; i < preloadCount; i++) {
+            CompletableFuture<Void> future = templateService.cloneFromTemplate(arenaId)
+                .thenAccept(pool::addInstance);
+            preloadFutures.add(future);
+          }
+
+          return CompletableFuture.allOf(preloadFutures.toArray(new CompletableFuture[0]))
+              .thenApply(v -> pool);
+        })
+        .orElse(CompletableFuture.failedFuture(
+            new IllegalArgumentException("Arena not found: " + arenaId)));
+  }
+
+  private static class ArenaPool {
+    private final Arena arena;
+    private final Queue<ArenaInstance> available = new ConcurrentLinkedQueue<>();
+    private final Set<ArenaInstance> inUse = ConcurrentHashMap.newKeySet();
+    private final Set<ArenaInstance> resetting = ConcurrentHashMap.newKeySet();
+    private final Set<ArenaInstance> all = ConcurrentHashMap.newKeySet();
+
+    ArenaPool(Arena arena) {
+      this.arena = arena;
+    }
+
+    void addInstance(ArenaInstance instance) {
+      all.add(instance);
+      available.offer(instance);
+    }
+
+    void returnInstance(ArenaInstance instance) {
+      inUse.remove(instance);
+      resetting.remove(instance);
+      available.offer(instance);
+    }
+
+    void removeInstance(ArenaInstance instance) {
+      all.remove(instance);
+      available.remove(instance);
+      inUse.remove(instance);
+      resetting.remove(instance);
+    }
+
+    ArenaInstance pollAvailable() {
+      ArenaInstance instance = available.poll();
+      if (instance != null) {
+        inUse.add(instance);
+      }
+      return instance;
+    }
+
+    int getAvailableCount() {
+      return available.size();
+    }
+
+    int getInUseCount() {
+      return inUse.size();
+    }
+
+    int getResettingCount() {
+      return resetting.size();
+    }
+
+    int getTotalCount() {
+      return all.size();
+    }
+
+    List<ArenaInstance> getAllInstances() {
+      return new ArrayList<>(all);
+    }
+
+    void removeExcess(int count) {
+      int removed = 0;
+      while (removed < count && !available.isEmpty()) {
+        ArenaInstance instance = available.poll();
+        if (instance != null) {
+          removeInstance(instance);
+          removed++;
+        }
+      }
+    }
+
+    void clear() {
+      available.clear();
+      inUse.clear();
+      resetting.clear();
+      all.clear();
+    }
+  }
+}

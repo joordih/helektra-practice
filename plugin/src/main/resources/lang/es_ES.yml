@@ -1,0 +1,96 @@
+# Spanish (Spain) Translation File
+# Use placeholders with {placeholder_name}
+
+# General Messages
+general:
+  prefix: "&8[&6Helektra&8]&r"
+  reload: "&aConfiguración recargada con éxito!"
+  no-permission: "&cNo tienes permiso para hacer eso."
+  player-not-found: "&cJugador {player} no encontrado."
+  must-be-player: "&cEste comando solo puede ser ejecutado por un jugador."
+  invalid-arguments: "&cArgumentos inválidos."
+
+# Profile Messages
+profile:
+  loading: "&eCargando tu perfil..."
+  loaded: "&aPerfil cargado con éxito!"
+  error: "&cOcurrió un error al cargar tu perfil."
+  saved: "&aTus ajustes han sido guardados!"
+
+kit:
+  received: "&aHas recibido el kit {kit}!"
+  already-has: "&cYa tienes un kit!"
+  not-found: "&cKit {kit} no encontrado."
+  selected: "&aHas seleccionado el kit {kit}!"
+  error: "&cOcurrió un error al darte el kit."
+  list:
+    title: "&6Kits Disponibles"
+    format: "&e- &f{kit}"
+
+time:
+  teleporting: "&f&lTELETRANSPORTANDO"
+  traveling-day: "&eViajando al amanecer..."
+  traveling-afternoon: "&6Viajando al atardecer..."
+  traveling-night: "&5Viajando a la noche..."
+  arrived-day: "&e&l✦ DÍA ✦"
+  arrived-afternoon: "&6&l✦ TARDE ✦"
+  arrived-night: "&5&l✦ NOCHE ✦"
+  subtitle-day: "&fHas llegado a un nuevo amanecer"
+  subtitle-afternoon: "&fHas llegado a un nuevo atardecer"
+  subtitle-night: "&fHas llegado a una nueva noche"
+
+connection:
+  welcome: "&aBienvenido a &6Helektra&a, {player}!"
+  first-join: "&aBienvenido por primera vez, {player}!"
+  disconnect: "&e{player} &7ha salido del juego"
+
+error:
+  generic: "&cOcurrió un error. Por favor intenta más tarde."
+  database: "&cError de base de datos. Por favor contacta a un administrador."
+  timeout: "&cTiempo de espera agotado. Por favor intenta de nuevo."
+
+arena:
+  commands-header: "&6&lComandos de Arena"
+  already-exists: "&cLa arena {id} ya existe."
+  invalid-type: "&cTipo de arena inválido: {type}. Tipos válidos: BUILD_UHC, NO_DEBUFF, SUMO, COMBO, GAPPLE, ARCHER, BRIDGES, CUSTOM"
+  validation-failed: "&cFalló la validación de selección:"
+  incomplete-selection: "&cDebes seleccionar ambas posiciones y ambos spawns."
+  created: "&aArena {id} creada exitosamente con nombre {name}!"
+  not-found: "&cArena {id} no encontrada."
+  deleted: "&aArena {id} ha sido eliminada."
+  no-arenas: "&cNo se han creado arenas aún."
+  list-header: "&6&lArenas &7({count} total)"
+  list-format: "&e{id} &7- &f{name} &7[{type}] &7- {enabled} &7- Disponible: &a{available} &7En Uso: &c{inUse}"
+  info-header: "&6&lInfo de Arena: &e{name}"
+  info-id: "&7ID: &f{id}"
+  info-type: "&7Tipo: &f{type}"
+  info-enabled: "&7Habilitada: &f{enabled}"
+  info-pool: "&7Pool: &aDisponible: {available} &cEn Uso: {inUse} &eReiniciando: {resetting}"
+  info-metrics: "&7Métricas: &fPartidas: {matches} &7Reinicios: {resets} &7Reinicio Prom: {avgReset}ms"
+  enabled: "&aArena {id} habilitada."
+  disabled: "&cArena {id} deshabilitada."
+  reloaded: "&aConfiguración de arenas recargada!"
+  wand-name: "&6Varita de Selección de Arena"
+  wand-lore-1: "&7Clic izquierdo: Establecer posición 1"
+  wand-lore-2: "&7Clic derecho: Establecer posición 2"
+  wand-lore-3: "&7Usa /arena setspawn <a|b> para spawns"
+  wand-received: "&aHas recibido la varita de selección de arena!"
+  pos1-set: "&aPosición 1 establecida en &f{x}, {y}, {z}"
+  pos2-set: "&aPosición 2 establecida en &f{x}, {y}, {z}"
+  volume-estimate: "&7Volumen estimado: &e{volume} bloques"
+  spawn-set: "&aSpawn {spawn} establecido en tu ubicación actual!"
+  invalid-spawn: "&cSpawn inválido. Usa 'a' o 'b'."
+  pool-scale-missing-value: "&cDebes especificar un valor de tamaño."
+  pool-scaled: "&aPool de arena {id} escalado a {size} instancias."
+  pool-cleared: "&aPool de arena {id} limpiado."
+  pool-invalid-action: "&cAcción de pool inválida. Usa 'scale <tamaño>' o 'clear'."
+  
+  validation:
+    no-selection: "No se encontró selección"
+    incomplete-region: "Selección de región incompleta"
+    incomplete-spawns: "Puntos de spawn no establecidos"
+    too-small: "La región seleccionada es muy pequeña (mínimo 100 bloques)"
+    too-large: "La región seleccionada es muy grande (máximo 10,000,000 bloques)"
+    low-height: "La altura de la arena es muy baja (recomendado al menos 5 bloques)"
+    spawn-a-outside: "Spawn A está fuera de la región seleccionada"
+    spawn-b-outside: "Spawn B está fuera de la región seleccionada"

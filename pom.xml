@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>dev.voltic</groupId>
+  <artifactId>helektra</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>api</module>
+    <module>plugin</module>
+  </modules>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+
+    <!-- Versions -->
+    <spigot.version>1.21.1-R0.1-SNAPSHOT</spigot.version>
+    <lombok.version>1.18.32</lombok.version>
+    <guava.version>32.1.2-jre</guava.version>
+    <jackson.version>2.17.1</jackson.version>
+    <mongodb.version>5.2.0</mongodb.version>
+    <guice.version>7.0.0</guice.version>
+    <jakarta.version>2.0.1</jakarta.version>
+    <adventure.version>4.17.0</adventure.version>
+    <adventure.bukkit.version>4.3.3</adventure.bukkit.version>
+    <log4j.version>2.24.1</log4j.version>
+    <fastboard.version>2.1.5</fastboard.version>
+    <fastinv.version>3.1.2</fastinv.version>
+    <commandflow.version>0.7.2</commandflow.version>
+    <placeholderapi.version>2.11.6</placeholderapi.version>
+  </properties>
+
+  <repositories>
+    <!-- Spigot/Paper -->
+    <repository>
+      <id>spigot-repo</id>
+      <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+    </repository>
+    <repository>
+      <id>sonatype</id>
+      <url>https://oss.sonatype.org/content/groups/public/</url>
+    </repository>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+    <repository>
+      <id>unnamed-public</id>
+      <url>https://repo.unnamed.team/repository/unnamed-releases/</url>
+    </repository>
+    <repository>
+      <id>placeholderapi</id>
+      <url>https://repo.extendedclip.com/releases/</url>
+    </repository>
+  </repositories>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Lombok -->
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <!-- Jackson -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jdk8</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <!-- Guice -->
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>${guice.version}</version>
+      </dependency>
+
+      <!-- MongoDB -->
+      <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>mongodb-driver-sync</artifactId>
+        <version>${mongodb.version}</version>
+      </dependency>
+
+      <!-- Spigot API -->
+      <dependency>
+        <groupId>org.spigotmc</groupId>
+        <artifactId>spigot-api</artifactId>
+        <version>${spigot.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <!-- Jakarta -->
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>${jakarta.version}</version>
+      </dependency>
+
+      <!-- Guava -->
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+
+      <!-- Adventure -->
+      <dependency>
+        <groupId>net.kyori</groupId>
+        <artifactId>adventure-api</artifactId>
+        <version>${adventure.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.kyori</groupId>
+        <artifactId>adventure-platform-bukkit</artifactId>
+        <version>${adventure.bukkit.version}</version>
+      </dependency>
+
+      <!-- Log4j 2 -->
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j2-impl</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+
+      <!-- FastBoard -->
+      <dependency>
+        <groupId>fr.mrmicky</groupId>
+        <artifactId>fastboard</artifactId>
+        <version>${fastboard.version}</version>
+      </dependency>
+
+      <!-- FastInv -->
+      <dependency>
+        <groupId>fr.mrmicky</groupId>
+        <artifactId>fastinv</artifactId>
+        <version>${fastinv.version}</version>
+      </dependency>
+
+      <!-- Commandflow -->
+      <dependency>
+        <groupId>team.unnamed</groupId>
+        <artifactId>commandflow-bukkit-commandmap</artifactId>
+        <version>${commandflow.version}</version>
+      </dependency>
+
+      <!-- PlaceholderAPI -->
+      <dependency>
+        <groupId>me.clip</groupId>
+        <artifactId>placeholderapi</artifactId>
+        <version>${placeholderapi.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>

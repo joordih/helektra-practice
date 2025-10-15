@@ -1,0 +1,4 @@
+name: Helektra
+main: dev.voltic.helektra.plugin.Helektra
+version: 0.1.0
+authors: ["Voltic Development", "Joordih"]

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>dev.voltic</groupId>
+    <artifactId>helektra</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <groupId>dev.voltic</groupId>
+  <artifactId>plugin</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+    <!-- API module -->
+    <dependency>
+      <groupId>dev.voltic</groupId>
+      <artifactId>api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Spigot API -->
+    <dependency>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- MongoDB -->
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongodb-driver-sync</artifactId>
+    </dependency>
+
+    <!-- Guice -->
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+    </dependency>
+
+    <!-- Jackson -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+    </dependency>
+
+    <!-- Lombok -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Kyori Adventure API -->
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-api</artifactId>
+      <version>${adventure.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-platform-bukkit</artifactId>
+      <version>${adventure.bukkit.version}</version>
+    </dependency>
+
+    <!-- Log4j 2 -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+
+    <!-- FastBoard -->
+    <dependency>
+      <groupId>fr.mrmicky</groupId>
+      <artifactId>fastboard</artifactId>
+      <version>${fastboard.version}</version>
+    </dependency>
+
+    <!-- FastInv -->
+    <dependency>
+      <groupId>fr.mrmicky</groupId>
+      <artifactId>fastinv</artifactId>
+      <version>${fastinv.version}</version>
+    </dependency>
+
+    <!-- Commandflow -->
+    <dependency>
+      <groupId>team.unnamed</groupId>
+      <artifactId>commandflow-bukkit-commandmap</artifactId>
+      <version>${commandflow.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>annotations</artifactId>
+          <groupId>org.jetbrains</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>adventure-api</artifactId>
+          <groupId>net.kyori</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- PlaceholderAPI -->
+    <dependency>
+      <groupId>me.clip</groupId>
+      <artifactId>placeholderapi</artifactId>
+      <version>${placeholderapi.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.2</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <minimizeJar>true</minimizeJar>
+              <relocations>
+                <relocation>
+                  <pattern>com.google.inject</pattern>
+                  <shadedPattern>dev.voltic.helektra.libs.guice</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>dev.voltic.helektra.api</pattern>
+                  <shadedPattern>dev.voltic.helektra.plugin.shaded.api</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.github.MilkBowl</pattern>
+                  <shadedPattern>dev.voltic.helektra.plugin.shaded.fastboard</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

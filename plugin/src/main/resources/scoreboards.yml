@@ -1,0 +1,106 @@
+scoreboard:
+  enabled: true
+  update-interval: 20
+
+  states:
+    LOBBY:
+      enabled: true
+      title: "&6&lHELEKTRA &7┃ &fLobby"
+      lines:
+        - " "
+        - "&6&lInfo"
+        - " &7* &ePlayers&7: &f{online_players}"
+        - " &7* &eLevel&7: &a{player_level}"
+        - " &7* &eStatus&7: &b{profile_state_name}"
+        - " "
+        - "&fWelcome back, &e%player_name%"
+        - ""
+        - "&f%localtime_time_dd/MM/YYYY HH:mm:ss%"
+        - ""
+        - "&eplay.helektra.com"
+
+    IN_GAME:
+      enabled: true
+      title: "&c&lHELEKTRA &7┃ &fMatch"
+      lines:
+        - " "
+        - "&6&lInfo"
+        - " &7* &eOpponent&7: &f{opponent_name}"
+        - " &7* &eHealth&7: &a{player_health}/20"
+        - " &7* &eLevel&7: &a{player_level}"
+        - " "
+        - "&7Focus and win!"
+        - "&7play.&fhelektra&7.com"
+
+    IN_QUEUE:
+      enabled: true
+      title: "&b&lHELEKTRA &7┃ &fQueue"
+      lines:
+        - " "
+        - "&6&lInfo"
+        - " &7* &eSearching opponent..."
+        - " &7* &eElapsed&7: &a{queue_time}s"
+        - " &7* &eLevel&7: &a{player_level}"
+        - " "
+        - "&7Good luck!"
+        - "&7play.&fhelektra&7.com"
+
+    KIT_EDITOR:
+      enabled: true
+      title: "&d&lHELEKTRA &7┃ &fKit Editor"
+      lines:
+        - " "
+        - "&6&lInfo"
+        - " &7* &eEditing kit..."
+        - " &7* &eLevel&7: &a{player_level}"
+        - " "
+        - "&7Save when finished!"
+        - "&7play.&fhelektra&7.com"
+
+    IN_PARTY:
+      enabled: true
+      title: "&5&lHELEKTRA &7┃ &fParty"
+      lines:
+        - " "
+        - "&6&lInfo"
+        - " &7* &eMembers&7: &d{party_members}"
+        - " &7* &eOnline&7: &f{online_players}"
+        - " &7* &eLevel&7: &a{player_level}"
+        - " "
+        - "&fTogether you’re stronger"
+        - "&7play.&fhelektra&7.com"
+
+    SPECTATOR:
+      enabled: true
+      title: "&7&lHELEKTRA &7┃ &fSpectating"
+      lines:
+        - " "
+        - "&6&lInfo"
+        - " &7* &eMode&7: &fSpectator"
+        - " &7* &eLevel&7: &a{player_level}"
+        - " "
+        - "&7Watch and learn"
+        - "&7play.&fhelektra&7.com"
+
+    IN_EVENT:
+      enabled: true
+      title: "&6&lHELEKTRA &7┃ &fEvent"
+      lines:
+        - " "
+        - "&6&lInfo"
+        - " &7* &eEvent Active"
+        - " &7* &fParticipants&7: &6{event_participants}"
+        - " &7* &eLevel&7: &a{player_level}"
+        - " "
+        - "&7Compete for glory"
+        - "&7play.&fhelektra&7.com"
+
+  placeholders:
+    online_players: "%player_online%"
+    player_level: "%player_level%"
+    player_health: "%player_health%"
+    profile_state_name: "%custom_state_name%"
+    opponent_name: "%custom_opponent%"
+    queue_time: "%custom_queue_time%"
+    party_members: "%custom_party_members%"
+    event_participants: "%custom_event_participants%"

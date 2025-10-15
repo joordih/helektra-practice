@@ -1,0 +1,272 @@
+# Menu Configuration File
+# Configure all menus including size, items, positions, and messages
+
+settings:
+  title: "&6⚙ Settings"
+  size: 9  # Must be multiple of 9 (9, 18, 27, 36, 45, 54)
+  items:
+    duel-requests:
+      position: 0
+      material: DIAMOND_SWORD
+      enabled-name: "&aDuel Requests"
+      disabled-name: "&cDuel Requests"
+      lore:
+        - "&fEnabled&7: {status}"
+        - ""
+        - "&eClick &fto &ctoggle &fduel requests"
+      placeholders:
+        status-enabled: "&aEnabled"
+        status-disabled: "&cDisabled"
+      messages:
+        enabled: "&aDuel requests enabled"
+        disabled: "&cDuel requests disabled"
+    
+    ping-matchmaking:
+      position: 1
+      material-enabled: LEVER
+      material-disabled: REDSTONE_TORCH
+      enabled-name: "&aPing Matchmaking"
+      disabled-name: "&cPing Matchmaking"
+      lore:
+        - "&fCurrent&7: {status}"
+        - ""
+        - "&aSets your max acceptable ping"
+        - "&afor matchmaking"
+        - ""
+        - "&eLeft click &fto &6toggle"
+        - "&eRight click &fto &6modify"
+      status-enabled: "&a&l&oENABLED"
+      status-disabled: "&c&l&oDISABLED"
+    
+    lobby-time:
+      position: 2
+      material: CLOCK
+      name: "&eLobby Time"
+      lore:
+        - "&fCurrent&7:"
+        - "  &7● {day}"
+        - "  &7● {afternoon}"
+        - "  &7● {night}"
+        - ""
+        - "&eClick &fto &6cycle &flobby time"
+      placeholders:
+        day-display: "&fDay"
+        day-selected: "&a&l&oDAY"
+        afternoon-display: "&fAfternoon"
+        afternoon-selected: "&a&l&oAFTERNOON"
+        night-display: "&fNight"
+        night-selected: "&a&l&oNIGHT"
+      message: "&eLobby time changed"
+    
+    event-messages:
+      position: 3
+      material: PAPER
+      enabled-name: "&aEvent Messages"
+      disabled-name: "&cEvent Messages"
+      lore:
+        - "&fEnabled&7: {status}"
+        - ""
+        - "&eClick &fto &ctoggle &fevent messages"
+      placeholders:
+        status-enabled: "&aEnabled"
+        status-disabled: "&cDisabled"
+      messages:
+        enabled: "&aEvent messages enabled"
+        disabled: "&cEvent messages disabled"
+    
+    view-players:
+      position: 4
+      material: PLAYER_HEAD
+      enabled-name: "&aView Players"
+      disabled-name: "&cView Players"
+      lore:
+        - "&fEnabled&7: {status}"
+        - ""
+        - "&eClick &fto &ctoggle &fplayer visibility"
+      placeholders:
+        status-enabled: "&aEnabled"
+        status-disabled: "&cDisabled"
+      messages:
+        enabled: "&aView players enabled"
+        disabled: "&cView players disabled"
+    
+    party-requests:
+      position: 5
+      material: CAKE
+      enabled-name: "&aParty Requests"
+      disabled-name: "&cParty Requests"
+      lore:
+        - "&fEnabled&7: {status}"
+        - ""
+        - "&eClick &fto &ctoggle &fparty requests"
+      placeholders:
+        status-enabled: "&aEnabled"
+        status-disabled: "&cDisabled"
+      messages:
+        enabled: "&aParty requests enabled"
+        disabled: "&cParty requests disabled"
+    
+    spectators:
+      position: 6
+      material: ENDER_EYE
+      enabled-name: "&aSpectators"
+      disabled-name: "&cSpectators"
+      lore:
+        - "&fEnabled&7: {status}"
+        - ""
+        - "&eClick &fto &ctoggle &fspectators"
+      placeholders:
+        status-enabled: "&aEnabled"
+        status-disabled: "&cDisabled"
+      messages:
+        enabled: "&aSpectators enabled"
+        disabled: "&cSpectators disabled"
+
+ping-matchmaking:
+  title: "&ePing Matchmaking Settings"
+  size: 27
+  items:
+    # Min Ping Display
+    min-ping-display:
+      position: 4
+      material: EMERALD
+      name: "&aMinimum Ping: &f{value}ms"
+      lore:
+        - ""
+        - "&7Adjust the minimum ping to"
+        - "&7find matches."
+        - ""
+        - "&eUse the buttons below"
+    
+    # Min Ping Controls
+    min-ping-decrease-10:
+      position: 1
+      material: RED_WOOL
+      name: "&c-10 ms"
+      lore:
+        - "&7Click to decrease"
+    
+    min-ping-decrease-1:
+      position: 2
+      material: ORANGE_WOOL
+      name: "&6-1 ms"
+      lore:
+        - "&7Click to decrease"
+    
+    min-ping-increase-1:
+      position: 6
+      material: LIME_WOOL
+      name: "&a+1 ms"
+      lore:
+        - "&7Click to increase"
+    
+    min-ping-increase-10:
+      position: 7
+      material: GREEN_WOOL
+      name: "&a+10 ms"
+      lore:
+        - "&7Click to increase"
+    
+    # Max Ping Display
+    max-ping-display:
+      position: 13
+      material: REDSTONE
+      name: "&cMaximum Ping: &f{value}ms"
+      lore:
+        - ""
+        - "&7Adjust the maximum ping to"
+        - "&7find matches."
+        - ""
+        - "&eUse the buttons below"
+    
+    # Max Ping Controls
+    max-ping-decrease-10:
+      position: 10
+      material: RED_WOOL
+      name: "&c-10 ms"
+      lore:
+        - "&7Click to decrease"
+    
+    max-ping-decrease-1:
+      position: 11
+      material: ORANGE_WOOL
+      name: "&6-1 ms"
+      lore:
+        - "&7Click to decrease"
+    
+    max-ping-increase-1:
+      position: 15
+      material: LIME_WOOL
+      name: "&a+1 ms"
+      lore:
+        - "&7Click to increase"
+    
+    max-ping-increase-10:
+      position: 16
+      material: GREEN_WOOL
+      name: "&a+10 ms"
+      lore:
+        - "&7Click to increase"
+    
+    # Back Button
+    back:
+      position: 18
+      material: BARRIER
+      name: "&cBack"
+      lore:
+        - "&7Back to settings menu"
+    
+    # Presets
+    preset-low:
+      position: 24
+      material: GOLD_INGOT
+      name: "&ePreset: Low Ping"
+      lore:
+        - "&7Min: &a{min}ms &7| Max: &c{max}ms"
+        - ""
+        - "&eClick to apply"
+      messages:
+        applied: "&aPreset applied: &fLow Ping"
+    
+    preset-medium:
+      position: 25
+      material: DIAMOND
+      name: "&bPreset: Medium Ping"
+      lore:
+        - "&7Min: &a{min}ms &7| Max: &c{max}ms"
+        - ""
+        - "&eClick to apply"
+      messages:
+        applied: "&aPreset applied: &fMedium Ping"
+    
+    preset-unlimited:
+      position: 26
+      material: NETHER_STAR
+      name: "&fPreset: Unlimited"
+      lore:
+        - "&7Min: &a{min}ms &7| Max: &c{max}ms"
+        - ""
+        - "&eClick to apply"
+      messages:
+        applied: "&aPreset applied: &fUnlimited"
+
+kit-selector:
+  title: "&6Kit Selection"
+  size: 54
+  items:
+    # Kit items will be dynamically added based on available kits
+    info:
+      position: 4
+      material: BOOK
+      name: "&eKit Information"
+      lore:
+        - "&7Select a kit to use in matches"
+        - ""
+        - "&fAvailable Kits&7: {count}"
+
+# Profile loading messages
+profile:
+  loading-title: "&eLoading Profile..."
+  loading-message: "&7Please wait while we load your data"
+  error-title: "&cError"
+  error-message: "&cFailed to load profile"

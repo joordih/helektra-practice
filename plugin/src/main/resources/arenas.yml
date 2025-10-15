@@ -1,0 +1,177 @@
+# Arena Configuration
+# Define all practice arenas here
+
+arenas:
+  # Example BuildUHC Arena
+  example-builduhc:
+    name: "BuildUHC Arena 1"
+    displayName: "&6BuildUHC &7Arena"
+    type: BUILD_UHC
+    enabled: true
+    deathY: 0
+    buildLimitHeight: 256
+    
+    region:
+      world: "world_practice_builduhc"
+      minX: 0
+      minY: 64
+      minZ: 0
+      maxX: 50
+      maxY: 120
+      maxZ: 50
+    
+    spawnA:
+      world: "world_practice_builduhc"
+      x: 10.5
+      y: 70.0
+      z: 25.5
+      yaw: 90.0
+      pitch: 0.0
+    
+    spawnB:
+      world: "world_practice_builduhc"
+      x: 40.5
+      y: 70.0
+      z: 25.5
+      yaw: -90.0
+      pitch: 0.0
+    
+    flags:
+      allowPlace: true
+      allowBreak: true
+      allowLiquids: true
+      allowProjectiles: true
+      allowPvP: true
+      allowHunger: true
+      allowItemDrop: true
+      allowItemPickup: true
+    
+    pool:
+      preloaded: 8
+      minIdle: 4
+      maxActive: 32
+      autoScale: true
+    
+    reset:
+      strategy: HYBRID
+      thresholdT1: 0.18
+      thresholdT2: 0.55
+      perTickBudget: 10000
+      async: true
+      backoffTpsThreshold: 195
+
+  # Example NoDebuff Arena
+  example-nodebuff:
+    name: "NoDebuff Arena 1"
+    displayName: "&cNoDebuff &7Arena"
+    type: NO_DEBUFF
+    enabled: true
+    deathY: 0
+    buildLimitHeight: 120
+    
+    region:
+      world: "world_practice_nodebuff"
+      minX: 0
+      minY: 64
+      minZ: 0
+      maxX: 30
+      maxY: 100
+      maxZ: 30
+    
+    spawnA:
+      world: "world_practice_nodebuff"
+      x: 8.5
+      y: 70.0
+      z: 15.5
+      yaw: 90.0
+      pitch: 0.0
+    
+    spawnB:
+      world: "world_practice_nodebuff"
+      x: 22.5
+      y: 70.0
+      z: 15.5
+      yaw: -90.0
+      pitch: 0.0
+    
+    flags:
+      allowPlace: false
+      allowBreak: false
+      allowLiquids: false
+      allowProjectiles: true
+      allowPvP: true
+      allowHunger: true
+      allowItemDrop: false
+      allowItemPickup: false
+    
+    pool:
+      preloaded: 8
+      minIdle: 4
+      maxActive: 32
+      autoScale: true
+    
+    reset:
+      strategy: JOURNAL_ONLY
+      thresholdT1: 0.18
+      thresholdT2: 0.55
+      perTickBudget: 10000
+      async: true
+      backoffTpsThreshold: 195
+
+  # Example Sumo Arena
+  example-sumo:
+    name: "Sumo Arena 1"
+    displayName: "&eSumo &7Arena"
+    type: SUMO
+    enabled: true
+    deathY: 60
+    buildLimitHeight: 80
+    
+    region:
+      world: "world_practice_sumo"
+      minX: 0
+      minY: 64
+      minZ: 0
+      maxX: 20
+      maxY: 80
+      maxZ: 20
+    
+    spawnA:
+      world: "world_practice_sumo"
+      x: 6.5
+      y: 70.0
+      z: 10.5
+      yaw: 90.0
+      pitch: 0.0
+    
+    spawnB:
+      world: "world_practice_sumo"
+      x: 14.5
+      y: 70.0
+      z: 10.5
+      yaw: -90.0
+      pitch: 0.0
+    
+    flags:
+      allowPlace: false
+      allowBreak: false
+      allowLiquids: false
+      allowProjectiles: false
+      allowPvP: true
+      allowHunger: false
+      allowItemDrop: false
+      allowItemPickup: false
+    
+    pool:
+      preloaded: 8
+      minIdle: 4
+      maxActive: 32
+      autoScale: true
+    
+    reset:
+      strategy: JOURNAL_ONLY
+      thresholdT1: 0.18
+      thresholdT2: 0.55
+      perTickBudget: 10000
+      async: true
+      backoffTpsThreshold: 195
