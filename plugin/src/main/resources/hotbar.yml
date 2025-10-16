@@ -1,0 +1,29 @@
+hotbar:
+  # ACTIONS:
+  # actions can be default triggered by default actions or custom using command
+  lobby:
+    items:
+      queue:
+        id: 1
+        name: "&aJoin Queue"
+        lore:
+          - "&7Click to join a game queue"
+        action: "JOIN_QUEUE"
+      kit:
+        id: 2
+        name: "&aKit editor"
+        lore:
+          - "&7Click to create a game"
+        action: "KIT_EDITOR"
+      settings:
+        id: 3
+        name: "&aSettings"
+        lore:
+          - "&7Click to open settings"
+        action: "SETTINGS"
+      friends:
+        id: 4
+        name: "&aFriends"
+        lore:
+          - "&7Click to manage friends"
+        action: "/friends"

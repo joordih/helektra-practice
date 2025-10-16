@@ -1,8 +1,8 @@
 package dev.voltic.helektra.plugin.nms.strategy.impl;
 
 import dev.voltic.helektra.plugin.Helektra;
-import dev.voltic.helektra.plugin.nms.NmsStrategies;
 import dev.voltic.helektra.plugin.nms.NmsStrategy;
+import dev.voltic.helektra.plugin.nms.strategy.NmsStrategies;
 import dev.voltic.helektra.plugin.nms.util.EnumUtils;
 import dev.voltic.helektra.plugin.utils.ColorUtils;
 import net.kyori.adventure.bossbar.BossBar;

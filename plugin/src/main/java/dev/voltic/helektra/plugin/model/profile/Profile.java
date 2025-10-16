@@ -18,271 +18,193 @@ import lombok.Setter;
 @Setter
 public class Profile implements IProfile {
 
-    @JsonProperty("_id")
-    private String id;
-    private String name;
-    private int level;
-    private Settings settings;
-    
-    @JsonIgnore
-    private ProfileState profileState;
+  @JsonProperty("_id")
+  private String id;
+  private String name;
+  private int level;
+  private Settings settings;
 
-    public Profile(String id, String name) {
-        this.id = id;
-        this.name = name;
-        this.level = 0;
-        this.settings = new Settings(
-            true, 
-            new PingMatchmaking(false, 0, 200),
-            LobbyTime.DAY,
-            true,
-            true,
-            true,
-            true
-        );
-        this.profileState = ProfileState.LOBBY;
-    }
+  @JsonIgnore
+  private ProfileState profileState = ProfileState.LOBBY;
 
-    @ConstructorProperties({
-        "_id",
-        "name",
-        "level",
-        "settings"
-    })
-    public Profile(String id, String name, int level, Settings settings) {
-        this.id = id;
-        this.name = name;
-        this.level = level;
-        this.settings = (settings != null) ? settings : new Settings(
-            true,
-            new PingMatchmaking(false, 0, 200),
-            LobbyTime.DAY,
-            true,
-            true,
-            true,
-            true
-        );
-        this.profileState = ProfileState.LOBBY;
-    }
+  public Profile(String id, String name) {
+    this(id, name, 0, defaultSettings());
+  }
 
-    @JsonIgnore
-    public UUID getUniqueId() {
-        return UUID.fromString(id);
-    }
+  @ConstructorProperties({
+      "_id",
+      "name",
+      "level",
+      "settings"
+  })
+  public Profile(String id, String name, int level, Settings settings) {
+    this.id = id;
+    this.name = name;
+    this.level = level;
+    this.settings = settings != null ? settings : defaultSettings();
+  }
 
-    @Override
-    public void setLevel(int level) {
-        this.level = level;
-    }
+  private static Settings defaultSettings() {
+    return new Settings(
+        true,
+        new PingMatchmaking(false, 0, 200),
+        LobbyTime.DAY,
+        true,
+        true,
+        true,
+        true,
+        false);
+  }
 
-    @Override
-    public boolean isAllowDuels() {
-        return settings.allowDuels();
-    }
+  @JsonIgnore
+  @Override
+  public UUID getUniqueId() {
+    return UUID.fromString(id);
+  }
 
-    @Override
-    public void setAllowDuels(boolean allowDuels) {
-        this.settings = new Settings(
-            allowDuels,
-            settings.pingMatchmaking(),
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
+  @Override
+  public Settings getSettings() {
+    return settings;
+  }
 
-    @Override
-    public PingMatchmaking getPingMatchmaking() {
-        return settings.pingMatchmaking();
-    }
+  @Override
+  public void setSettings(IProfile.Settings settings) {
+    if (settings instanceof Settings s)
+      this.settings = s;
+    else
+      throw new IllegalArgumentException("Invalid settings type: " + settings.getClass());
+  }
 
-    @Override
-    public void setPingMatchmaking(PingMatchmaking pingMatchmaking) {
-        this.settings = new Settings(
-            settings.allowDuels(),
-            pingMatchmaking,
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
+  public static class Settings implements IProfile.Settings {
 
-    @Override
-    public boolean isPingMatchmakingEnabled() {
-        return settings.pingMatchmaking().enabled();
-    }
+    @JsonProperty("allowDuels")
+    private boolean allowDuels;
 
-    @Override
-    public void setPingMatchmakingEnabled(boolean enabled) {
-        PingMatchmaking pm = settings.pingMatchmaking();
-        this.settings = new Settings(
-            settings.allowDuels(),
-            new PingMatchmaking(enabled, pm.min(), pm.max()),
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
+    @JsonProperty("pingMatchmaking")
+    private PingMatchmaking pingMatchmaking;
 
-    @Override
-    public int getMinPingMatchmaking() {
-        return settings.pingMatchmaking().min();
-    }
+    @JsonProperty("lobbyTime")
+    private LobbyTime lobbyTime;
 
-    @Override
-    public void setMinPingMatchmaking(int min) {
-        PingMatchmaking pm = settings.pingMatchmaking();
-        this.settings = new Settings(
-            settings.allowDuels(),
-            new PingMatchmaking(pm.enabled(), min, pm.max()),
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
+    @JsonProperty("viewEventMessages")
+    private boolean viewEventMessages;
 
-    @Override
-    public int getMaxPingMatchmaking() {
-        return settings.pingMatchmaking().max();
-    }
+    @JsonProperty("viewPlayers")
+    private boolean viewPlayers;
 
-    @Override
-    public void setMaxPingMatchmaking(int max) {
-        PingMatchmaking pm = settings.pingMatchmaking();
-        this.settings = new Settings(
-            settings.allowDuels(),
-            new PingMatchmaking(pm.enabled(), pm.min(), max),
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
+    @JsonProperty("allowParty")
+    private boolean allowParty;
 
-    @Override
-    public LobbyTime getLobbyTime() {
-        return settings.lobbyTime();
-    }
+    @JsonProperty("allowSpectators")
+    private boolean allowSpectators;
 
-    @Override
-    public void setLobbyTime(LobbyTime lobbyTime) {
-        this.settings = new Settings(
-            settings.allowDuels(),
-            settings.pingMatchmaking(),
-            lobbyTime,
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
+    @JsonProperty("kitMode")
+    private boolean kitMode;
 
-    @Override
-    public boolean isViewEventMessages() {
-        return settings.viewEventMessages();
-    }
-
-    @Override
-    public void setViewEventMessages(boolean viewEventMessages) {
-        this.settings = new Settings(
-            settings.allowDuels(),
-            settings.pingMatchmaking(),
-            settings.lobbyTime(),
-            viewEventMessages,
-            settings.viewPlayers(),
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
-
-    @Override
-    public boolean isViewPlayers() {
-        return settings.viewPlayers();
-    }
-
-    @Override
-    public void setViewPlayers(boolean viewPlayers) {
-        this.settings = new Settings(
-            settings.allowDuels(),
-            settings.pingMatchmaking(),
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            viewPlayers,
-            settings.allowParty(),
-            settings.allowSpectators()
-        );
-    }
-
-    @Override
-    public boolean isAllowParty() {
-        return settings.allowParty();
-    }
-
-    @Override
-    public void setAllowParty(boolean allowParty) {
-        this.settings = new Settings(
-            settings.allowDuels(),
-            settings.pingMatchmaking(),
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            allowParty,
-            settings.allowSpectators()
-        );
-    }
-
-    @Override
-    public boolean isAllowSpectators() {
-        return settings.allowSpectators();
-    }
-
-    @Override
-    public void setAllowSpectators(boolean allowSpectators) {
-        this.settings = new Settings(
-            settings.allowDuels(),
-            settings.pingMatchmaking(),
-            settings.lobbyTime(),
-            settings.viewEventMessages(),
-            settings.viewPlayers(),
-            settings.allowParty(),
-            allowSpectators
-        );
-    }
-
-    @Override
-    public ProfileState getProfileState() {
-        return profileState;
-    }
-
-    @Override
-    public void setProfileState(ProfileState profileState) {
-        this.profileState = profileState;
-    }
-
-    public record Settings(
+    @JsonCreator
+    public Settings(
         @JsonProperty("allowDuels") boolean allowDuels,
         @JsonProperty("pingMatchmaking") PingMatchmaking pingMatchmaking,
         @JsonProperty("lobbyTime") LobbyTime lobbyTime,
         @JsonProperty("viewEventMessages") boolean viewEventMessages,
         @JsonProperty("viewPlayers") boolean viewPlayers,
         @JsonProperty("allowParty") boolean allowParty,
-        @JsonProperty("allowSpectators") boolean allowSpectators
-    ) {
-        @JsonCreator
-        public Settings {
-            if (pingMatchmaking == null)
-                throw new IllegalArgumentException("PingMatchmaking cannot be null");
-            if (lobbyTime == null)
-                throw new IllegalArgumentException("LobbyTime cannot be null");
-        }
+        @JsonProperty("allowSpectators") boolean allowSpectators,
+        @JsonProperty("kitMode") boolean kitMode) {
+
+      if (pingMatchmaking == null)
+        throw new IllegalArgumentException("PingMatchmaking cannot be null");
+      if (lobbyTime == null)
+        throw new IllegalArgumentException("LobbyTime cannot be null");
+
+      this.allowDuels = allowDuels;
+      this.pingMatchmaking = pingMatchmaking;
+      this.lobbyTime = lobbyTime;
+      this.viewEventMessages = viewEventMessages;
+      this.viewPlayers = viewPlayers;
+      this.allowParty = allowParty;
+      this.allowSpectators = allowSpectators;
+      this.kitMode = kitMode;
     }
+
+    @Override
+    public boolean isAllowDuels() {
+      return allowDuels;
+    }
+
+    @Override
+    public void setAllowDuels(boolean allowDuels) {
+      this.allowDuels = allowDuels;
+    }
+
+    @Override
+    public boolean isAllowParty() {
+      return allowParty;
+    }
+
+    @Override
+    public void setAllowParty(boolean allowParty) {
+      this.allowParty = allowParty;
+    }
+
+    @Override
+    public boolean isAllowSpectators() {
+      return allowSpectators;
+    }
+
+    @Override
+    public void setAllowSpectators(boolean allowSpectators) {
+      this.allowSpectators = allowSpectators;
+    }
+
+    @Override
+    public boolean isViewPlayers() {
+      return viewPlayers;
+    }
+
+    @Override
+    public void setViewPlayers(boolean viewPlayers) {
+      this.viewPlayers = viewPlayers;
+    }
+
+    @Override
+    public boolean isViewEventMessages() {
+      return viewEventMessages;
+    }
+
+    @Override
+    public void setViewEventMessages(boolean viewEventMessages) {
+      this.viewEventMessages = viewEventMessages;
+    }
+
+    @Override
+    public boolean isKitMode() {
+      return kitMode;
+    }
+
+    @Override
+    public void setKitMode(boolean kitMode) {
+      this.kitMode = kitMode;
+    }
+
+    @Override
+    public PingMatchmaking getPingMatchmaking() {
+      return pingMatchmaking;
+    }
+
+    @Override
+    public void setPingMatchmaking(PingMatchmaking pingMatchmaking) {
+      this.pingMatchmaking = pingMatchmaking;
+    }
+
+    @Override
+    public LobbyTime getLobbyTime() {
+      return lobbyTime;
+    }
+
+    @Override
+    public void setLobbyTime(LobbyTime lobbyTime) {
+      this.lobbyTime = lobbyTime;
+    }
+  }
 }

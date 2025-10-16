@@ -2,15 +2,19 @@ package dev.voltic.helektra.plugin.utils;
 
 import dev.voltic.helektra.api.model.profile.LobbyTime;
 import dev.voltic.helektra.plugin.Helektra;
-import dev.voltic.helektra.plugin.nms.NmsStrategies;
+import dev.voltic.helektra.plugin.nms.strategy.NmsStrategies;
+import dev.voltic.helektra.plugin.utils.xseries.XMaterial;
 import dev.voltic.helektra.plugin.utils.xseries.XPotion;
 import dev.voltic.helektra.plugin.utils.xseries.XSound;
 import dev.voltic.helektra.plugin.utils.xseries.particles.ParticleDisplay;
 import dev.voltic.helektra.plugin.utils.xseries.particles.XParticle;
+import fr.mrmicky.fastinv.ItemBuilder;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 
 public class BukkitUtils {
@@ -18,6 +22,7 @@ public class BukkitUtils {
     private static final long DAY_TIME = 1000L;
     private static final long AFTERNOON_TIME = 9000L;
     private static final long NIGHT_TIME = 13000L;
+    public static ItemStack GOLDEN_HEAD;
 
     public static void setPlayerTimeSmoothly(Player player, LobbyTime lobbyTime) {
         long targetTime = getTimeFromLobbyTime(lobbyTime);
@@ -41,6 +46,13 @@ public class BukkitUtils {
             fadeOut(player, lobbyTime);
             playArrivalSound(player);
         }, 40L);
+    }
+
+    public static void registerGoldenHeads(Helektra helektra) {
+        GOLDEN_HEAD = new ItemBuilder(XMaterial.GOLDEN_APPLE.get())
+            .name(ColorUtils.translate(helektra.getSettingsConfig().getConfig().getString("settings.other.golden-head.name")))
+            .lore(ColorUtils.translate(helektra.getSettingsConfig().getConfig().getStringList("settings.other.golden-head.lore")))
+            .build();
     }
 
     private static void spawnTeleportParticles(Player player, LobbyTime time) {

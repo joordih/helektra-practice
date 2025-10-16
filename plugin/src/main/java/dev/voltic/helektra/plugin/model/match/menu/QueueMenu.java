@@ -8,21 +8,21 @@ import fr.mrmicky.fastinv.ItemBuilder;
 import jakarta.inject.Inject;
 import org.bukkit.entity.Player;
 
-public class MatchModeMenu extends InjectableMenu {
+public class QueueMenu extends InjectableMenu {
     private final Helektra helektra;
 
     @Inject
-    public MatchModeMenu(MenuConfigHelper menuConfig, Helektra helektra) {
-        super(menuConfig, "match-mode");
+    public QueueMenu(MenuConfigHelper menuConfig, Helektra helektra) {
+        super(menuConfig, "queue");
         this.helektra = helektra;
     }
 
     @Override
     public void setup(Player player) {
-        setupModeItems();
+        setupQueueOptions();
     }
 
-    private void setupModeItems() {
+    private void setupQueueOptions() {
         MenuItemConfig unrankedItem = menuConfig.getItemConfig(menuPath, "unranked");
         if (unrankedItem.exists()) {
             setItem(unrankedItem.getPosition(),

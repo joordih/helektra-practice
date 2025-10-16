@@ -8,6 +8,7 @@ public interface IArenaService {
     Optional<Arena> getArena(String id);
     List<Arena> getAllArenas();
     List<Arena> getArenasByType(ArenaType type);
+    List<Arena> getArenasByKit(String kitName);
     List<Arena> getEnabledArenas();
     void saveArena(Arena arena);
     void deleteArena(String id);

@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -20,6 +22,9 @@ public class Arena implements Model {
     
     @Builder.Default
     private boolean enabled = true;
+    
+    @Builder.Default
+    private List<String> compatibleKits = new ArrayList<>();
     
     private Region region;
     private Location spawnA;
@@ -54,5 +59,19 @@ public class Arena implements Model {
 
     public boolean isAboveBuildLimit(int y) {
         return y > buildLimitHeight;
+    }
+
+    public boolean isCompatibleWithKit(String kitName) {
+        return compatibleKits.isEmpty() || compatibleKits.contains(kitName);
+    }
+
+    public void addCompatibleKit(String kitName) {
+        if (!compatibleKits.contains(kitName)) {
+            compatibleKits.add(kitName);
+        }
+    }
+
+    public void removeCompatibleKit(String kitName) {
+        compatibleKits.remove(kitName);
     }
 }

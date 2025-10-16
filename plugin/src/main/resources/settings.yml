@@ -1,5 +1,11 @@
 settings:
+  lang: "en_US"
   mongodb:
     uri: "mongodb://localhost:27017"
     database: "helektra"
-  lang: "en_US"
+  other:
+    golden-head:
+      name: "&6&lGolden Head"
+      lore:
+        - "&5This is a golden head!"
+        - "&5Consume it to get superpowers!"

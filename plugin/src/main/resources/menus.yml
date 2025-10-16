@@ -254,7 +254,6 @@ kit-selector:
   title: "&6Kit Selection"
   size: 54
   items:
-    # Kit items will be dynamically added based on available kits
     info:
       position: 4
       material: BOOK
@@ -264,28 +263,92 @@ kit-selector:
         - ""
         - "&fAvailable Kits&7: {count}"
 
-match-mode:
-  title: "&6Match Mode Selection"
+queue:
+  title: "&6Queue Menu"
   size: 27
   items:
     unranked:
       position: 11
       material: IRON_SWORD
-      name: "&eUnranked Matches"
+      name: "&eUnranked Queue"
       lore:
         - "&7Play casual matches"
         - "&7without ranking"
         - ""
-        - "&eClick to browse"
+        - "&eClick to browse kits"
     ranked:
       position: 15
       material: DIAMOND_SWORD
-      name: "&cRanked Matches"
+      name: "&cRanked Queue"
       lore:
         - "&7Compete for ranking"
-        - "&7and rewards"
+        - "&7and climb the ladder"
         - ""
-        - "&eClick to browse"
+        - "&eClick to browse kits"
+
+unranked-kits:
+  title: "&eUnranked - Select Kit"
+  size: 54
+  items: {}
+
+ranked-kits:
+  title: "&cRanked - Select Kit"
+  size: 54
+  items: {}
+
+duel-kit:
+  title: "&6Duel - Select Kit"
+  size: 54
+  items: {}
+
+duel-arena:
+  title: "&6Duel - Select Arena"
+  size: 54
+  items: {}
+
+duel-rounds:
+  title: "&6Duel - Select Rounds"
+  size: 27
+  items: {}
+
+ffa:
+  title: "&6FFA Modes"
+  size: 27
+  items:
+    ffa:
+      position: 10
+      material: IRON_SWORD
+      name: "&aFFA"
+      lore:
+        - "&7Free for all battle"
+        - ""
+        - "&eClick to select"
+    party_ffa:
+      position: 13
+      material: DIAMOND_SWORD
+      name: "&bParty FFA"
+      lore:
+        - "&7Requires a party"
+        - ""
+        - "&eClick to select"
+    range_rover:
+      position: 16
+      material: BOW
+      name: "&dRange Rover"
+      lore:
+        - "&7Available only in parties"
+        - ""
+        - "&eClick to select"
+
+ffa-kit:
+  title: "&6FFA - Select Kit"
+  size: 54
+  items: {}
+
+ffa-arena:
+  title: "&6FFA - Select Arena"
+  size: 54
+  items: {}
 
 unranked:
   title: "&eUnranked Match Types"

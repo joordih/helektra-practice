@@ -44,18 +44,18 @@ public class SettingsMenu extends InjectableMenu {
     MenuItemConfig duelItem = menuConfig.getItemConfig(menuPath, "duel-requests");
     if (duelItem.exists()) {
       Map<String, String> placeholders = new HashMap<>();
-      placeholders.put("status", profile.isAllowDuels() 
+      placeholders.put("status", profile.getSettings().isAllowDuels()
           ? duelItem.getString("placeholders.status-enabled", "&aEnabled")
           : duelItem.getString("placeholders.status-disabled", "&cDisabled"));
 
       setItem(duelItem.getPosition(), new ItemBuilder(duelItem.getMaterial())
-          .name(duelItem.getName(profile.isAllowDuels()))
+          .name(duelItem.getName(profile.getSettings().isAllowDuels()))
           .lore(duelItem.getLore(placeholders))
           .build(), event -> {
-            profile.setAllowDuels(!profile.isAllowDuels());
+            profile.getSettings().setAllowDuels(!profile.getSettings().isAllowDuels());
             helektra.getProfileService().saveProfile(profile);
             helektra.getMenuFactory().openMenu(SettingsMenu.class, player);
-            player.sendMessage(profile.isAllowDuels()
+            player.sendMessage(profile.getSettings().isAllowDuels()
                 ? duelItem.getMessage("enabled")
                 : duelItem.getMessage("disabled"));
           });
@@ -64,18 +64,19 @@ public class SettingsMenu extends InjectableMenu {
     MenuItemConfig pingItem = menuConfig.getItemConfig(menuPath, "ping-matchmaking");
     if (pingItem.exists()) {
       Map<String, String> placeholders = new HashMap<>();
-      placeholders.put("status", profile.isPingMatchmakingEnabled()
+      placeholders.put("status", profile.getSettings().getPingMatchmaking().enabled()
           ? pingItem.getString("status-enabled")
           : pingItem.getString("status-disabled"));
 
       setItem(pingItem.getPosition(),
-          new ItemBuilder(pingItem.getMaterial(profile.isPingMatchmakingEnabled()))
-              .name(pingItem.getName(profile.isPingMatchmakingEnabled()))
+          new ItemBuilder(pingItem.getMaterial(profile.getSettings().getPingMatchmaking().enabled()))
+              .name(pingItem.getName(profile.getSettings().getPingMatchmaking().enabled()))
               .lore(pingItem.getLore(placeholders))
               .build(),
           event -> {
             if (event.isLeftClick()) {
-              profile.setPingMatchmakingEnabled(!profile.isPingMatchmakingEnabled());
+              profile.getSettings().getPingMatchmaking()
+                  .setEnabled(!profile.getSettings().getPingMatchmaking().enabled());
 
               helektra.getProfileService().saveProfile(profile);
               helektra.getMenuFactory().openMenu(SettingsMenu.class, player);
@@ -89,13 +90,13 @@ public class SettingsMenu extends InjectableMenu {
     MenuItemConfig timeItem = menuConfig.getItemConfig(menuPath, "lobby-time");
     if (timeItem.exists()) {
       Map<String, String> placeholders = new HashMap<>();
-      placeholders.put("day", profile.getLobbyTime() == LobbyTime.DAY
+      placeholders.put("day", profile.getSettings().getLobbyTime() == LobbyTime.DAY
           ? timeItem.getString("placeholders.day-selected", "&a&l&oDAY")
           : timeItem.getString("placeholders.day-display", "&fDay"));
-      placeholders.put("afternoon", profile.getLobbyTime() == LobbyTime.AFTERNOON
+      placeholders.put("afternoon", profile.getSettings().getLobbyTime() == LobbyTime.AFTERNOON
           ? timeItem.getString("placeholders.afternoon-selected", "&a&l&oAFTERNOON")
           : timeItem.getString("placeholders.afternoon-display", "&fAfternoon"));
-      placeholders.put("night", profile.getLobbyTime() == LobbyTime.NIGHT
+      placeholders.put("night", profile.getSettings().getLobbyTime() == LobbyTime.NIGHT
           ? timeItem.getString("placeholders.night-selected", "&a&l&oNIGHT")
           : timeItem.getString("placeholders.night-display", "&fNight"));
 
@@ -103,13 +104,13 @@ public class SettingsMenu extends InjectableMenu {
           .name(timeItem.getName())
           .lore(timeItem.getLore(placeholders))
           .build(), event -> {
-            profile.setLobbyTime(switch (profile.getLobbyTime()) {
+            profile.getSettings().setLobbyTime(switch (profile.getSettings().getLobbyTime()) {
               case DAY -> LobbyTime.AFTERNOON;
               case AFTERNOON -> LobbyTime.NIGHT;
               case NIGHT -> LobbyTime.DAY;
             });
             helektra.getProfileService().saveProfile(profile);
-            BukkitUtils.setPlayerTimeSmoothly(player, profile.getLobbyTime());
+            BukkitUtils.setPlayerTimeSmoothly(player, profile.getSettings().getLobbyTime());
 
             helektra.getMenuFactory().openMenu(SettingsMenu.class, player);
             player.sendMessage(timeItem.getString("message"));
@@ -119,19 +120,19 @@ public class SettingsMenu extends InjectableMenu {
     MenuItemConfig eventItem = menuConfig.getItemConfig(menuPath, "event-messages");
     if (eventItem.exists()) {
       Map<String, String> placeholders = new HashMap<>();
-      placeholders.put("status", profile.isViewEventMessages()
+      placeholders.put("status", profile.getSettings().isViewEventMessages()
           ? eventItem.getString("placeholders.status-enabled", "&aEnabled")
           : eventItem.getString("placeholders.status-disabled", "&cDisabled"));
 
       setItem(eventItem.getPosition(), new ItemBuilder(eventItem.getMaterial())
-          .name(eventItem.getName(profile.isViewEventMessages()))
+          .name(eventItem.getName(profile.getSettings().isViewEventMessages()))
           .lore(eventItem.getLore(placeholders))
           .build(), event -> {
-            profile.setViewEventMessages(!profile.isViewEventMessages());
+            profile.getSettings().setViewEventMessages(!profile.getSettings().isViewEventMessages());
             helektra.getProfileService().saveProfile(profile);
             helektra.getMenuFactory().openMenu(SettingsMenu.class, player);
 
-            String message = profile.isViewEventMessages()
+            String message = profile.getSettings().isViewEventMessages()
                 ? eventItem.getMessage("enabled")
                 : eventItem.getMessage("disabled");
             player.sendMessage(message);
@@ -141,19 +142,19 @@ public class SettingsMenu extends InjectableMenu {
     MenuItemConfig viewPlayersItem = menuConfig.getItemConfig(menuPath, "view-players");
     if (viewPlayersItem.exists()) {
       Map<String, String> placeholders = new HashMap<>();
-      placeholders.put("status", profile.isViewPlayers()
+      placeholders.put("status", profile.getSettings().isViewPlayers()
           ? viewPlayersItem.getString("placeholders.status-enabled", "&aEnabled")
           : viewPlayersItem.getString("placeholders.status-disabled", "&cDisabled"));
 
       setItem(viewPlayersItem.getPosition(), new ItemBuilder(viewPlayersItem.getMaterial())
-          .name(viewPlayersItem.getName(profile.isViewPlayers()))
+          .name(viewPlayersItem.getName(profile.getSettings().isViewPlayers()))
           .lore(viewPlayersItem.getLore(placeholders))
           .build(), event -> {
-            profile.setViewPlayers(!profile.isViewPlayers());
+            profile.getSettings().setViewPlayers(!profile.getSettings().isViewPlayers());
             helektra.getProfileService().saveProfile(profile);
             helektra.getMenuFactory().openMenu(SettingsMenu.class, player);
 
-            String message = profile.isViewPlayers()
+            String message = profile.getSettings().isViewPlayers()
                 ? viewPlayersItem.getMessage("enabled")
                 : viewPlayersItem.getMessage("disabled");
             player.sendMessage(message);
@@ -163,19 +164,19 @@ public class SettingsMenu extends InjectableMenu {
     MenuItemConfig partyItem = menuConfig.getItemConfig(menuPath, "party-requests");
     if (partyItem.exists()) {
       Map<String, String> placeholders = new HashMap<>();
-      placeholders.put("status", profile.isAllowParty()
+      placeholders.put("status", profile.getSettings().isAllowParty()
           ? partyItem.getString("placeholders.status-enabled", "&aEnabled")
           : partyItem.getString("placeholders.status-disabled", "&cDisabled"));
 
       setItem(partyItem.getPosition(), new ItemBuilder(partyItem.getMaterial())
-          .name(partyItem.getName(profile.isAllowParty()))
+          .name(partyItem.getName(profile.getSettings().isAllowParty()))
           .lore(partyItem.getLore(placeholders))
           .build(), event -> {
-            profile.setAllowParty(!profile.isAllowParty());
+            profile.getSettings().setAllowParty(!profile.getSettings().isAllowParty());
             helektra.getProfileService().saveProfile(profile);
             helektra.getMenuFactory().openMenu(SettingsMenu.class, player);
 
-            String message = profile.isAllowParty()
+            String message = profile.getSettings().isAllowParty()
                 ? partyItem.getMessage("enabled")
                 : partyItem.getMessage("disabled");
             player.sendMessage(message);
@@ -185,19 +186,19 @@ public class SettingsMenu extends InjectableMenu {
     MenuItemConfig spectatorsItem = menuConfig.getItemConfig(menuPath, "spectators");
     if (spectatorsItem.exists()) {
       Map<String, String> placeholders = new HashMap<>();
-      placeholders.put("status", profile.isAllowSpectators()
+      placeholders.put("status", profile.getSettings().isAllowSpectators()
           ? spectatorsItem.getString("placeholders.status-enabled", "&aEnabled")
           : spectatorsItem.getString("placeholders.status-disabled", "&cDisabled"));
 
       setItem(spectatorsItem.getPosition(), new ItemBuilder(spectatorsItem.getMaterial())
-          .name(spectatorsItem.getName(profile.isAllowSpectators()))
+          .name(spectatorsItem.getName(profile.getSettings().isAllowSpectators()))
           .lore(spectatorsItem.getLore(placeholders))
           .build(), event -> {
-            profile.setAllowSpectators(!profile.isAllowSpectators());
+            profile.getSettings().setAllowSpectators(!profile.getSettings().isAllowSpectators());
             helektra.getProfileService().saveProfile(profile);
             helektra.getMenuFactory().openMenu(SettingsMenu.class, player);
 
-            String message = profile.isAllowSpectators()
+            String message = profile.getSettings().isAllowSpectators()
                 ? spectatorsItem.getMessage("enabled")
                 : spectatorsItem.getMessage("disabled");
             player.sendMessage(message);

@@ -54,6 +54,14 @@ public class ArenaService implements IArenaService {
     }
 
     @Override
+    public List<Arena> getArenasByKit(String kitName) {
+        return arenas.values().stream()
+                .filter(Arena::isEnabled)
+                .filter(a -> a.isCompatibleWithKit(kitName))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Arena> getEnabledArenas() {
         return arenas.values().stream()
                 .filter(Arena::isEnabled)
@@ -132,6 +140,10 @@ public class ArenaService implements IArenaService {
         ArenaFlags flags = parseFlags(section.getConfigurationSection("flags"));
         PoolConfig poolConfig = parsePoolConfig(section.getConfigurationSection("pool"));
         ResetConfig resetConfig = parseResetConfig(section.getConfigurationSection("reset"));
+        
+        List<String> compatibleKits = section.contains("compatibleKits") 
+                ? section.getStringList("compatibleKits") 
+                : new ArrayList<>();
 
         return Arena.builder()
                 .id(id)
@@ -139,6 +151,7 @@ public class ArenaService implements IArenaService {
                 .displayName(section.getString("displayName", id))
                 .type(ArenaType.valueOf(section.getString("type", "CUSTOM").toUpperCase()))
                 .enabled(section.getBoolean("enabled", true))
+                .compatibleKits(compatibleKits)
                 .deathY(section.getInt("deathY", 0))
                 .buildLimitHeight(section.getInt("buildLimitHeight", 256))
                 .region(region)
@@ -225,6 +238,7 @@ public class ArenaService implements IArenaService {
         arenasConfig.getConfig().set(path + ".displayName", arena.getDisplayName());
         arenasConfig.getConfig().set(path + ".type", arena.getType().name());
         arenasConfig.getConfig().set(path + ".enabled", arena.isEnabled());
+        arenasConfig.getConfig().set(path + ".compatibleKits", arena.getCompatibleKits());
         arenasConfig.getConfig().set(path + ".deathY", arena.getDeathY());
         arenasConfig.getConfig().set(path + ".buildLimitHeight", arena.getBuildLimitHeight());
 

@@ -12,27 +12,34 @@ import dev.voltic.helektra.plugin.utils.config.FileConfig;
 
 public class MongoModule extends AbstractModule {
 
-    private final FileConfig settingsConfig;
+  private final FileConfig settingsConfig;
 
-    public MongoModule(FileConfig settingsConfig) {
-        this.settingsConfig = settingsConfig;
-    }
+  public MongoModule(FileConfig settingsConfig) {
+    this.settingsConfig = settingsConfig;
+  }
 
-    static {
-        LoggerUtils.blockMongoDBLogs();
-    }
+  static {
+    LoggerUtils.blockMongoDBLogs();
+  }
 
-    @Provides
-    @Singleton
-    public MongoClient provideClient() {
-        String mongoUri = settingsConfig.getConfig().getString("settings.mongodb.uri");
-        return MongoClients.create(mongoUri);
-    }
+  @Provides
+  @Singleton
+  public MongoClient provideClient() {
+    try {
+      String mongoUri = settingsConfig.getConfig().getString("settings.mongodb.uri");
+      MongoClient client = MongoClients.create(mongoUri);
 
-    @Provides
-    @Singleton
-    public MongoDatabase provideDatabase(MongoClient client) {
-        String databaseName = settingsConfig.getConfig().getString("settings.mongodb.database");
-        return client.getDatabase(databaseName);
+      return client;
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+    return null;
+  }
+
+  @Provides
+  @Singleton
+  public MongoDatabase provideDatabase(MongoClient client) {
+    String databaseName = settingsConfig.getConfig().getString("settings.mongodb.database");
+    return client.getDatabase(databaseName);
+  }
 }

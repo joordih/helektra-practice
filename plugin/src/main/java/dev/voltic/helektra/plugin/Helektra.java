@@ -1,11 +1,19 @@
 package dev.voltic.helektra.plugin;
 
+import java.util.List;
+
+import org.bukkit.Bukkit;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.mongodb.client.MongoDatabase;
+
 import dev.voltic.helektra.api.IHelektraAPI;
 import dev.voltic.helektra.api.model.arena.IArenaService;
 import dev.voltic.helektra.api.model.kit.IKitService;
+import dev.voltic.helektra.api.model.match.IMatchService;
 import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.scoreboard.IScoreboardService;
 import dev.voltic.helektra.api.repository.RepositoryFactory;
@@ -15,6 +23,7 @@ import dev.voltic.helektra.plugin.di.KitModule;
 import dev.voltic.helektra.plugin.di.MatchModule;
 import dev.voltic.helektra.plugin.di.MongoModule;
 import dev.voltic.helektra.plugin.di.ProfileModule;
+import dev.voltic.helektra.plugin.di.ProfileStateModule;
 import dev.voltic.helektra.plugin.di.ScoreboardModule;
 import dev.voltic.helektra.plugin.di.UtilsModule;
 import dev.voltic.helektra.plugin.listeners.PlayerListeners;
@@ -23,25 +32,25 @@ import dev.voltic.helektra.plugin.model.arena.listeners.ArenaBlockTrackingListen
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaProtectionListener;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaSelectionListener;
 import dev.voltic.helektra.plugin.model.kit.commands.KitCommand;
+import dev.voltic.helektra.plugin.model.match.MatchServiceImpl;
+import dev.voltic.helektra.plugin.model.match.commands.DuelCommand;
 import dev.voltic.helektra.plugin.model.match.commands.QueueCommand;
 import dev.voltic.helektra.plugin.model.match.listeners.MatchListener;
 import dev.voltic.helektra.plugin.model.profile.commands.SettingsCommand;
+import dev.voltic.helektra.plugin.model.profile.hotbar.HotbarInteractListener;
 import dev.voltic.helektra.plugin.model.scoreboard.wrapper.ScoreboardListener;
 import dev.voltic.helektra.plugin.model.scoreboard.wrapper.ScoreboardUpdater;
-import dev.voltic.helektra.plugin.nms.NmsStrategies;
+import dev.voltic.helektra.plugin.nms.strategy.NmsStrategies;
 import dev.voltic.helektra.plugin.repository.MongoRepositoryFactory;
+import dev.voltic.helektra.plugin.utils.BukkitUtils;
 import dev.voltic.helektra.plugin.utils.ColorUtils;
 import dev.voltic.helektra.plugin.utils.LoggerUtils;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
 import dev.voltic.helektra.plugin.utils.config.FileConfig;
 import dev.voltic.helektra.plugin.utils.menu.MenuFactory;
 import fr.mrmicky.fastinv.FastInvManager;
-import java.util.List;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import org.bukkit.Bukkit;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
 import team.unnamed.commandflow.CommandManager;
 import team.unnamed.commandflow.annotated.AnnotatedCommandTreeBuilder;
 import team.unnamed.commandflow.annotated.part.PartInjector;
@@ -60,6 +69,7 @@ public final class Helektra extends JavaPlugin {
   private FileConfig menusConfig;
   private FileConfig arenasConfig;
   private FileConfig scoreboardsConfig;
+  private FileConfig hotbarConfig;
 
   private Injector injector;
   private RepositoryFactory repositoryFactory;
@@ -67,7 +77,7 @@ public final class Helektra extends JavaPlugin {
   private IKitService kitService;
   private IProfileService profileService;
   private IScoreboardService scoreboardService;
-  private dev.voltic.helektra.api.model.match.IMatchService matchService;
+  private IMatchService matchService;
   private MenuFactory menuFactory;
   private BukkitAudiences adventure;
   private ScoreboardUpdater scoreboardUpdater;
@@ -115,7 +125,8 @@ public final class Helektra extends JavaPlugin {
   public void onDisable() {
     stopScoreboard();
     log("&cHelektra stopped successfully.");
-    if (this.adventure != null) this.adventure.close();
+    if (this.adventure != null)
+      this.adventure.close();
   }
 
   private void initConfigs() {
@@ -124,6 +135,7 @@ public final class Helektra extends JavaPlugin {
     this.menusConfig = new FileConfig(this, "menus.yml");
     this.arenasConfig = new FileConfig(this, "arenas.yml");
     this.scoreboardsConfig = new FileConfig(this, "scoreboards.yml");
+    this.hotbarConfig = new FileConfig(this, "hotbar.yml");
   }
 
   private void initTranslations() {
@@ -133,18 +145,18 @@ public final class Helektra extends JavaPlugin {
 
   private void initGuice() {
     injector = Guice.createInjector(
-      new MongoModule(settingsConfig),
-      new KitModule(kitsConfig),
-      new ProfileModule(),
-      new UtilsModule(),
-      new ArenaModule(),
-      new ScoreboardModule(),
-      new MatchModule(),
-      binder -> {
-        binder.bind(Helektra.class).toInstance(this);
-        binder.bind(JavaPlugin.class).toInstance(this);
-      }
-    );
+        new MongoModule(settingsConfig),
+        new KitModule(kitsConfig),
+        new ProfileModule(),
+        new ProfileStateModule(),
+        new UtilsModule(),
+        new ArenaModule(),
+        new ScoreboardModule(),
+        new MatchModule(),
+        binder -> {
+          binder.bind(Helektra.class).toInstance(this);
+          binder.bind(JavaPlugin.class).toInstance(this);
+        });
 
     database = injector.getInstance(MongoDatabase.class);
     repositoryFactory = new MongoRepositoryFactory(database);
@@ -152,7 +164,7 @@ public final class Helektra extends JavaPlugin {
     kitService = injector.getInstance(IKitService.class);
     profileService = injector.getInstance(IProfileService.class);
     scoreboardService = injector.getInstance(IScoreboardService.class);
-    matchService = injector.getInstance(dev.voltic.helektra.api.model.match.IMatchService.class);
+    matchService = injector.getInstance(MatchServiceImpl.class);
     scoreboardUpdater = injector.getInstance(ScoreboardUpdater.class);
     api = injector.getInstance(HelektraAPI.class);
 
@@ -171,17 +183,19 @@ public final class Helektra extends JavaPlugin {
   }
 
   private void registerListeners() {
+    BukkitUtils.registerGoldenHeads(this);
+    log("&aRegistered golden heads successfully.");
+
     List.of(
-      PlayerListeners.class,
-      ArenaSelectionListener.class,
-      ArenaProtectionListener.class,
-      ArenaBlockTrackingListener.class,
-      ScoreboardListener.class,
-      MatchListener.class
-    ).forEach(listenerClass -> {
-      Object listener = injector.getInstance(listenerClass);
-      Bukkit.getPluginManager().registerEvents((Listener) listener, this);
-    });
+        PlayerListeners.class,
+        ArenaSelectionListener.class,
+        ArenaProtectionListener.class,
+        ArenaBlockTrackingListener.class,
+        ScoreboardListener.class, HotbarInteractListener.class, MatchListener.class).forEach(listenerClass -> {
+          Object listener = injector.getInstance(listenerClass);
+          Bukkit.getPluginManager().registerEvents((Listener) listener, this);
+
+        });
     log("&aListeners registered successfully (via Guice).");
   }
 
@@ -191,23 +205,20 @@ public final class Helektra extends JavaPlugin {
     partInjector.install(new DefaultsModule());
     partInjector.install(new BukkitModule());
     AnnotatedCommandTreeBuilder builder = AnnotatedCommandTreeBuilder.create(
-      partInjector
-    );
+        partInjector);
 
     manager.registerCommands(
-      builder.fromClass(injector.getInstance(KitCommand.class))
-    );
+        builder.fromClass(injector.getInstance(KitCommand.class)));
     manager.registerCommands(
-      builder.fromClass(injector.getInstance(SettingsCommand.class))
-    );
+        builder.fromClass(injector.getInstance(SettingsCommand.class)));
     manager.registerCommands(
-      builder.fromClass(injector.getInstance(ArenaCommand.class))
-    );
+        builder.fromClass(injector.getInstance(ArenaCommand.class)));
     manager.registerCommands(
-      builder.fromClass(injector.getInstance(QueueCommand.class))
-    );
+        builder.fromClass(injector.getInstance(QueueCommand.class)));
+    manager.registerCommands(
+        builder.fromClass(injector.getInstance(DuelCommand.class)));
 
-    log("&aCommands registered successfully (Kits, Settings, Arena, Queue).");
+    log("&aCommands registered successfully (Kits, Settings, Arena, Queue, Duel).");
   }
 
   private void startScoreboard() {

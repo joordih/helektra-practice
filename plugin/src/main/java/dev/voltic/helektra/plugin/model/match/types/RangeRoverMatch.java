@@ -3,6 +3,7 @@ package dev.voltic.helektra.plugin.model.match.types;
 import dev.voltic.helektra.api.model.arena.Arena;
 import dev.voltic.helektra.api.model.kit.IKit;
 import dev.voltic.helektra.api.model.match.MatchType;
+import dev.voltic.helektra.api.model.match.Participant;
 import dev.voltic.helektra.plugin.model.match.Match;
 
 import java.util.List;
@@ -27,7 +28,7 @@ public class RangeRoverMatch extends Match {
     private void initializeParticipants(List<UUID> participantIds) {
         participantIds.forEach(uuid -> {
             this.getParticipants().add(
-                new dev.voltic.helektra.api.model.match.Participant(
+                new Participant(
                     uuid, null, 0, 0, true
                 )
             );

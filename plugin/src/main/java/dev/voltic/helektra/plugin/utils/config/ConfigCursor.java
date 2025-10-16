@@ -35,7 +35,7 @@ public class ConfigCursor {
 
   public boolean exists(String path) {
     return this.fileConfig.getConfig()
-      .contains(this.path + (path == null ? "" : "." + path));
+        .contains(this.path + (path == null ? "" : "." + path));
   }
 
   public Set<String> getKeys() {
@@ -44,43 +44,43 @@ public class ConfigCursor {
 
   public Set<String> getKeys(String path) {
     return this.fileConfig.getConfig()
-      .getConfigurationSection(this.path + (path == null ? "" : "." + path))
-      .getKeys(false);
+        .getConfigurationSection(this.path + (path == null ? "" : "." + path))
+        .getKeys(false);
   }
 
   public boolean getBoolean(String path) {
     return this.fileConfig.getConfig()
-      .getBoolean((this.path == null ? "" : this.path + ".") + "." + path);
+        .getBoolean((this.path == null ? "" : this.path + ".") + "." + path);
   }
 
   public int getInt(String path) {
     return this.fileConfig.getConfig()
-      .getInt((this.path == null ? "" : this.path + ".") + "." + path);
+        .getInt((this.path == null ? "" : this.path + ".") + "." + path);
   }
 
   public double getDouble(String path) {
     return this.fileConfig.getConfig()
-      .getDouble((this.path == null ? "" : this.path + ".") + "." + path);
+        .getDouble((this.path == null ? "" : this.path + ".") + "." + path);
   }
 
   public double getDouble(String path, double defaultValue) {
     return this.fileConfig.getConfig()
-      .getDouble((this.path == null ? "" : this.path + ".") + "." + path, defaultValue);
+        .getDouble((this.path == null ? "" : this.path + ".") + "." + path, defaultValue);
   }
 
   public long getLong(String path) {
     return this.fileConfig.getConfig()
-      .getLong((this.path == null ? "" : this.path + ".") + "." + path);
+        .getLong((this.path == null ? "" : this.path + ".") + "." + path);
   }
 
   public String getString(String path) {
     return this.fileConfig.getConfig()
-      .getString((this.path == null ? "" : this.path + ".") + "." + path);
+        .getString((this.path == null ? "" : this.path + ".") + "." + path);
   }
 
   public List<String> getStringList(String path) {
     return this.fileConfig.getConfig()
-      .getStringList((this.path == null ? "" : this.path + ".") + "." + path);
+        .getStringList((this.path == null ? "" : this.path + ".") + "." + path);
   }
 
   public UUID getUuid(String path) {

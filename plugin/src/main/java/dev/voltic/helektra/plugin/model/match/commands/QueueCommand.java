@@ -3,7 +3,7 @@ package dev.voltic.helektra.plugin.model.match.commands;
 import com.google.inject.Inject;
 import dev.voltic.helektra.api.model.match.IMatchService;
 import dev.voltic.helektra.plugin.Helektra;
-import dev.voltic.helektra.plugin.model.match.menu.MatchModeMenu;
+import dev.voltic.helektra.plugin.model.match.menu.QueueMenu;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
 import org.bukkit.entity.Player;
 import team.unnamed.commandflow.annotated.CommandClass;
@@ -29,7 +29,7 @@ public class QueueCommand implements CommandClass {
             player.sendMessage(TranslationUtils.translate("error.player-only"));
             return;
         }
-        helektra.getMenuFactory().openMenu(MatchModeMenu.class, player);
+        helektra.getMenuFactory().openMenu(QueueMenu.class, player);
     }
 
     @Command(names = "list")
