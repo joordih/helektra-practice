@@ -1,16 +1,16 @@
 package dev.voltic.helektra.plugin.model.profile.hotbar;
 
+import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-
-import com.google.common.collect.Maps;
-
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 public final class ProfileHotbarLayout {
+
   private final Map<Integer, ProfileHotbarItem> itemsBySlot;
 
   public ProfileHotbarLayout(Collection<ProfileHotbarItem> items) {
@@ -33,10 +33,16 @@ public final class ProfileHotbarLayout {
 
   public Optional<String> actionFor(int slot) {
     ProfileHotbarItem item = itemsBySlot.get(slot);
-    if (item == null)
-      return Optional.empty();
+    if (item == null) return Optional.empty();
 
     return Optional.of(item.action());
+  }
+
+  public Optional<ItemStack> itemForSlot(int slot) {
+    ProfileHotbarItem item = itemsBySlot.get(slot);
+    if (item == null) return Optional.empty();
+
+    return Optional.of(item.item());
   }
 
   public boolean isEmpty() {

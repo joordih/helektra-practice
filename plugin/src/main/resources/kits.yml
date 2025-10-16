@@ -1,0 +1,193 @@
+kits:
+  builduhc:
+    name: BuildUHC
+    displayName: BuildUHC
+    arenaIds: []
+    slot: 1
+    kitEditorSlot: 0
+    health: 20.0
+    potionEffects: []
+    damageMultiplier: 1.0
+    description: []
+    inventory:
+      size: 43
+      contents:
+      - slot: 0
+        item:
+          DataVersion: 4556
+          id: minecraft:diamond_sword
+          count: 1
+          components:
+            minecraft:enchantments: '{"minecraft:sharpness":3}'
+          schema_version: 1
+          x-material: DIAMOND_SWORD
+      - slot: 1
+        item:
+          DataVersion: 4556
+          id: minecraft:fishing_rod
+          count: 1
+          schema_version: 1
+          x-material: FISHING_ROD
+      - slot: 2
+        item:
+          DataVersion: 4556
+          id: minecraft:bow
+          count: 1
+          components:
+            minecraft:enchantments: '{"minecraft:power":3}'
+          schema_version: 1
+          x-material: BOW
+      - slot: 3
+        item:
+          DataVersion: 4556
+          id: minecraft:lava_bucket
+          count: 1
+          schema_version: 1
+          x-material: LAVA_BUCKET
+      - slot: 4
+        item:
+          DataVersion: 4556
+          id: minecraft:water_bucket
+          count: 1
+          schema_version: 1
+          x-material: WATER_BUCKET
+      - slot: 5
+        item:
+          DataVersion: 4556
+          id: minecraft:cooked_beef
+          count: 64
+          schema_version: 1
+          x-material: COOKED_BEEF
+      - slot: 6
+        item:
+          DataVersion: 4556
+          id: minecraft:golden_apple
+          count: 3
+          components:
+            minecraft:lore: '[{extra:[{bold:0b,color:"dark_purple",italic:0b,obfuscated:0b,strikethrough:0b,text:"This
+              is a golden head!",underlined:0b}],text:""},{extra:[{bold:0b,color:"dark_purple",italic:0b,obfuscated:0b,strikethrough:0b,text:"Consume
+              it to get superpowers!",underlined:0b}],text:""}]'
+            minecraft:custom_name: '{extra:[{bold:1b,color:"gold",italic:0b,obfuscated:0b,strikethrough:0b,text:"Golden
+              Head",underlined:0b}],text:""}'
+          schema_version: 1
+          x-material: GOLDEN_APPLE
+      - slot: 7
+        item:
+          DataVersion: 4556
+          id: minecraft:golden_apple
+          count: 6
+          schema_version: 1
+          x-material: GOLDEN_APPLE
+      - slot: 8
+        item:
+          DataVersion: 4556
+          id: minecraft:oak_planks
+          count: 64
+          schema_version: 1
+          x-material: OAK_PLANKS
+      - slot: 18
+        item:
+          DataVersion: 4556
+          id: minecraft:diamond_axe
+          count: 1
+          schema_version: 1
+          x-material: DIAMOND_AXE
+      - slot: 27
+        item:
+          DataVersion: 4556
+          id: minecraft:diamond_pickaxe
+          count: 1
+          schema_version: 1
+          x-material: DIAMOND_PICKAXE
+      - slot: 29
+        item:
+          DataVersion: 4556
+          id: minecraft:arrow
+          count: 25
+          schema_version: 1
+          x-material: ARROW
+      - slot: 30
+        item:
+          DataVersion: 4556
+          id: minecraft:lava_bucket
+          count: 1
+          schema_version: 1
+          x-material: LAVA_BUCKET
+      - slot: 31
+        item:
+          DataVersion: 4556
+          id: minecraft:water_bucket
+          count: 1
+          schema_version: 1
+          x-material: WATER_BUCKET
+      - slot: 35
+        item:
+          DataVersion: 4556
+          id: minecraft:cobblestone
+          count: 64
+          schema_version: 1
+          x-material: COBBLESTONE
+      - slot: 36
+        item:
+          DataVersion: 4556
+          id: minecraft:diamond_boots
+          count: 1
+          components:
+            minecraft:enchantments: '{"minecraft:projectile_protection":2}'
+          schema_version: 1
+          x-material: DIAMOND_BOOTS
+      - slot: 37
+        item:
+          DataVersion: 4556
+          id: minecraft:diamond_leggings
+          count: 1
+          components:
+            minecraft:enchantments: '{"minecraft:protection":2}'
+          schema_version: 1
+          x-material: DIAMOND_LEGGINGS
+      - slot: 38
+        item:
+          DataVersion: 4556
+          id: minecraft:diamond_chestplate
+          count: 1
+          components:
+            minecraft:enchantments: '{"minecraft:protection":2}'
+          schema_version: 1
+          x-material: DIAMOND_CHESTPLATE
+      - slot: 39
+        item:
+          DataVersion: 4556
+          id: minecraft:diamond_helmet
+          count: 1
+          components:
+            minecraft:enchantments: '{"minecraft:projectile_protection":2}'
+          schema_version: 1
+          x-material: DIAMOND_HELMET
+    icon:
+      DataVersion: 4556
+      id: minecraft:lava_bucket
+      count: 1
+      schema_version: 1
+      x-material: LAVA_BUCKET
+    rules:
+      BUILD: true
+      BREAK: true
+      COMBO: false
+      ENDER_PEARL: false
+      FALL_DAMAGE: true
+      HUNGER: true
+      INTERACT: true
+      KNOCKBACK: false
+      REGENERATION: false
+      PROJECTILES: true
+      ARMOR: true
+      PARKOUR: false
+      SUMO: false
+      SPEED: false
+      DROP_ITEMS: true
+      BOXING: false
+      SHIELD: false
+      LAVA_DAMAGE: true
+      VOID_DAMAGE: false
+      BED_DAMAGE: false
+      SATURATION: false

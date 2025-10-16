@@ -9,6 +9,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 @Singleton
 public class ProfileHotbarService {
@@ -35,6 +36,17 @@ public class ProfileHotbarService {
       return;
     }
     layout.apply(player);
+  }
+
+  public void applySlot(Player player, ProfileState state, int slot) {
+    ProfileHotbarLayout layout = layouts.get(state);
+    if (layout == null) {
+      player.getInventory().setItem(slot, null);
+      return;
+    }
+
+    Optional<ItemStack> item = layout.itemForSlot(slot);
+    player.getInventory().setItem(slot, item.orElse(null));
   }
 
   public Optional<String> resolveAction(ProfileState state, int slot) {

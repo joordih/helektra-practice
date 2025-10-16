@@ -1,5 +1,11 @@
 package dev.voltic.helektra.plugin.model.profile.hotbar;
 
+import dev.voltic.helektra.api.model.profile.ProfileState;
+import dev.voltic.helektra.plugin.Helektra;
+import dev.voltic.helektra.plugin.utils.config.ConfigCursor;
+import dev.voltic.helektra.plugin.utils.config.FileConfig;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -7,48 +13,45 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
-
 import org.bukkit.inventory.ItemStack;
-
-import dev.voltic.helektra.api.model.profile.ProfileState;
-import dev.voltic.helektra.plugin.Helektra;
-import dev.voltic.helektra.plugin.utils.config.ConfigCursor;
-import dev.voltic.helektra.plugin.utils.config.FileConfig;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 @Singleton
 public class ProfileHotbarLayoutRepository {
+
   private final FileConfig hotbarConfig;
   private final HotbarItemFactory itemFactory;
   private final Logger logger;
 
   @Inject
-  public ProfileHotbarLayoutRepository(Helektra plugin, HotbarItemFactory itemFactory) {
+  public ProfileHotbarLayoutRepository(
+    Helektra plugin,
+    HotbarItemFactory itemFactory
+  ) {
     this.hotbarConfig = plugin.getHotbarConfig();
     this.itemFactory = itemFactory;
     this.logger = plugin.getLogger();
   }
 
   public Map<ProfileState, ProfileHotbarLayout> load() {
-    Map<ProfileState, ProfileHotbarLayout> layouts = new EnumMap<>(ProfileState.class);
+    Map<ProfileState, ProfileHotbarLayout> layouts = new EnumMap<>(
+      ProfileState.class
+    );
     ConfigCursor hotbarCursor = new ConfigCursor(hotbarConfig, "hotbar");
 
-    if (!isSection(hotbarCursor))
-      return layouts;
+    if (!isSection(hotbarCursor)) return layouts;
 
     for (String stateKey : hotbarCursor.getKeys()) {
       Optional<ProfileState> state = resolveState(stateKey);
-      if (state.isEmpty())
-        continue;
+      if (state.isEmpty()) continue;
 
-      ConfigCursor itemsCursor = new ConfigCursor(hotbarConfig, resolvePath(hotbarCursor, stateKey + ".items"));
-      if (!isSection(itemsCursor))
-        continue;
+      ConfigCursor itemsCursor = new ConfigCursor(
+        hotbarConfig,
+        resolvePath(hotbarCursor, stateKey + ".items")
+      );
+      if (!isSection(itemsCursor)) continue;
 
       List<ProfileHotbarItem> items = parseItems(itemsCursor);
-      if (items.isEmpty())
-        continue;
+      if (items.isEmpty()) continue;
 
       layouts.put(state.get(), new ProfileHotbarLayout(items));
     }
@@ -57,15 +60,17 @@ public class ProfileHotbarLayoutRepository {
 
   private List<ProfileHotbarItem> parseItems(ConfigCursor itemsCursor) {
     List<ProfileHotbarItem> items = new ArrayList<>();
-    if (!isSection(itemsCursor))
-      return items;
+    if (!isSection(itemsCursor)) return items;
 
     for (String key : itemsCursor.getKeys()) {
-      ConfigCursor itemCursor = new ConfigCursor(hotbarConfig, resolvePath(itemsCursor, key));
+      ConfigCursor itemCursor = new ConfigCursor(
+        hotbarConfig,
+        resolvePath(itemsCursor, key)
+      );
 
-      int slot = getInt(itemCursor, "id", -1);
+      int slot = resolveSlot(itemCursor);
       if (slot < 0) {
-        warnInvalid(key, "Missing or invalid id");
+        warnInvalid(key, "Missing or invalid slot");
         continue;
       }
 
@@ -88,6 +93,14 @@ public class ProfileHotbarLayoutRepository {
       items.add(new ProfileHotbarItem(slot, itemStack.get(), action));
     }
     return items;
+  }
+
+  private int resolveSlot(ConfigCursor itemCursor) {
+    int slot = getInt(itemCursor, "slot", Integer.MIN_VALUE);
+    if (slot == Integer.MIN_VALUE) {
+      slot = getInt(itemCursor, "id", Integer.MIN_VALUE);
+    }
+    return slot == Integer.MIN_VALUE ? -1 : slot;
   }
 
   private Optional<ProfileState> resolveState(String key) {
@@ -113,8 +126,7 @@ public class ProfileHotbarLayoutRepository {
   }
 
   private boolean isSection(ConfigCursor cursor) {
-    if (cursor == null)
-      return false;
+    if (cursor == null) return false;
 
     String path = cursor.getPath();
     if (path == null || path.isEmpty()) {
@@ -127,32 +139,34 @@ public class ProfileHotbarLayoutRepository {
   private String resolvePath(ConfigCursor cursor, String child) {
     String base = cursor.getPath();
 
-    if (child == null || child.isEmpty())
-      return base;
-    if (base == null || base.isEmpty())
-      return child;
+    if (child == null || child.isEmpty()) return base;
+    if (base == null || base.isEmpty()) return child;
 
     return base + "." + child;
   }
 
   private int getInt(ConfigCursor cursor, String path, int defaultValue) {
     return cursor
-        .getFileConfig()
-        .getConfig()
-        .getInt(resolvePath(cursor, path), defaultValue);
+      .getFileConfig()
+      .getConfig()
+      .getInt(resolvePath(cursor, path), defaultValue);
   }
 
-  private String getString(ConfigCursor cursor, String path, String defaultValue) {
+  private String getString(
+    ConfigCursor cursor,
+    String path,
+    String defaultValue
+  ) {
     return cursor
-        .getFileConfig()
-        .getConfig()
-        .getString(resolvePath(cursor, path), defaultValue);
+      .getFileConfig()
+      .getConfig()
+      .getString(resolvePath(cursor, path), defaultValue);
   }
 
   private List<String> getStringList(ConfigCursor cursor, String path) {
     return cursor
-        .getFileConfig()
-        .getConfig()
-        .getStringList(resolvePath(cursor, path));
+      .getFileConfig()
+      .getConfig()
+      .getStringList(resolvePath(cursor, path));
   }
 }

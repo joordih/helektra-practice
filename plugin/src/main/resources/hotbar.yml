@@ -4,26 +4,92 @@ hotbar:
   lobby:
     items:
       queue:
-        id: 1
+        slot: 0
+        material: "DIAMOND_SWORD"
         name: "&aJoin Queue"
         lore:
           - "&7Click to join a game queue"
         action: "JOIN_QUEUE"
       kit:
-        id: 2
-        name: "&aKit editor"
+        slot: 4
+        material: "BOOK"
+        name: "&aKit Editor"
         lore:
-          - "&7Click to create a game"
+          - "&7Click to open the kit editor"
         action: "KIT_EDITOR"
       settings:
-        id: 3
+        slot: 7
+        material: "ANVIL"
         name: "&aSettings"
         lore:
           - "&7Click to open settings"
         action: "SETTINGS"
       friends:
-        id: 4
+        slot: 8
+        material: "PLAYER_HEAD"
         name: "&aFriends"
         lore:
           - "&7Click to manage friends"
         action: "/friends"
+      cosmetics:
+        slot: 1
+        material: "CHEST"
+        name: "&bCosmetics"
+        lore:
+          - "&7Browse lobby cosmetics"
+        action: "/cosmetics"
+      events:
+        slot: 6
+        material: "CLOCK"
+        name: "&eEvents"
+        lore:
+          - "&7View active events"
+        action: "/events"
+
+  in_queue:
+    items:
+      status:
+        slot: 0
+        material: "PAPER"
+        name: "&aQueue Status"
+        lore:
+          - "&7View your current queue"
+        action: "/queue status"
+      select_kit:
+        slot: 4
+        material: "CHEST"
+        name: "&eSelect Kit"
+        lore:
+          - "&7Open the queue kit selector"
+        action: "/queue"
+      leave:
+        slot: 8
+        material: "BARRIER"
+        name: "&cLeave Queue"
+        lore:
+          - "&7Cancel the current queue"
+        action: "/queue leave"
+
+  spectator:
+    items:
+      teleporter:
+        slot: 0
+        material: "COMPASS"
+        name: "&bSpectator Teleporter"
+        lore:
+          - "&7Navigate to players in the match"
+        action: "/spectate menu"
+      visibility:
+        slot: 4
+        material: "ENDER_EYE"
+        name: "&aToggle Spectators"
+        lore:
+          - "&7Toggle other spectators"
+        action: "/spectate toggle"
+      leave:
+        slot: 8
+        material: "BARRIER"
+        name: "&cReturn to Lobby"
+        lore:
+          - "&7Leave spectating and return to lobby"
+        action: "/spectate leave"

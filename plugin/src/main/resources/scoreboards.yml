@@ -15,7 +15,7 @@ scoreboard:
         - " "
         - "&fWelcome back, &e%player_name%"
         - ""
-        - "&f%localtime_time_dd/MM/YYYY HH:mm:ss%"
+        - "&7%localtime_time_dd/MM/YYYY HH:mm:ss%"
         - ""
         - "&eplay.helektra.com"
 

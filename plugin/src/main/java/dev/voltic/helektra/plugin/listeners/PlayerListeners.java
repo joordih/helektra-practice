@@ -1,16 +1,19 @@
 package dev.voltic.helektra.plugin.listeners;
 
 import dev.voltic.helektra.api.model.profile.IProfile;
+import dev.voltic.helektra.api.model.profile.IProfileService;
+import dev.voltic.helektra.api.model.profile.ProfileState;
 import dev.voltic.helektra.plugin.Helektra;
 import dev.voltic.helektra.plugin.model.profile.Profile;
+import dev.voltic.helektra.plugin.model.profile.state.ProfileHotbarService;
+import dev.voltic.helektra.plugin.model.profile.state.ProfileStateManager;
 import dev.voltic.helektra.plugin.nms.strategy.NmsStrategies;
 import dev.voltic.helektra.plugin.nms.strategy.impl.NmsBossBarStrategy;
 import dev.voltic.helektra.plugin.utils.BukkitUtils;
+import dev.voltic.helektra.plugin.utils.TranslationUtils;
 import dev.voltic.helektra.plugin.utils.xseries.XPotion;
 import jakarta.inject.Inject;
 import java.util.Optional;
-import dev.voltic.helektra.api.model.profile.ProfileState;
-import dev.voltic.helektra.plugin.model.profile.state.ProfileStateManager;
 import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -26,20 +29,29 @@ public class PlayerListeners implements Listener {
 
   private final Helektra helektra;
   private final ProfileStateManager profileStateManager;
+  private final IProfileService profileService;
+  private final ProfileHotbarService hotbarService;
 
   @Inject
-  public PlayerListeners(Helektra helektra, ProfileStateManager profileStateManager) {
+  public PlayerListeners(
+    Helektra helektra,
+    ProfileStateManager profileStateManager,
+    IProfileService profileService,
+    ProfileHotbarService hotbarService
+  ) {
     this.helektra = helektra;
     this.profileStateManager = profileStateManager;
+    this.profileService = profileService;
+    this.hotbarService = hotbarService;
   }
 
   @EventHandler
   public void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
     var uuid = event.getUniqueId();
     Optional<IProfile> profile = helektra
-        .getProfileService()
-        .getProfile(uuid)
-        .join();
+      .getProfileService()
+      .getProfile(uuid)
+      .join();
 
     if (profile.isEmpty()) {
       profile = Optional.of(new Profile(uuid.toString(), event.getName()));
@@ -51,37 +63,72 @@ public class PlayerListeners implements Listener {
   @EventHandler
   public void onPlayerJoin(PlayerJoinEvent event) {
     var player = event.getPlayer();
+    var uuid = player.getUniqueId();
 
     Bukkit.getScheduler().runTaskLater(
-        helektra,
-        () -> {
-          NmsStrategies.PING.execute(player);
-          NmsStrategies.TITLE.execute(
-              player,
-              "&fWelcome to",
-              "&eHelektra Practice",
-              10,
-              60,
-              10);
-          NmsStrategies.ACTION_BAR.execute(player, "&a¡Good luck!");
-          NmsStrategies.BOSS_BAR.execute(
-              player,
-              "&eHelektra Practice - &6Development Mode",
-              1.0f,
-              BossBar.Color.WHITE,
-              BossBar.Overlay.PROGRESS);
-          profileStateManager.setState(player, ProfileState.LOBBY);
-        }, 20L);
+      helektra,
+      () -> {
+        NmsStrategies.PING.execute(player);
+        NmsStrategies.TITLE.execute(
+          player,
+          "&fWelcome to",
+          "&eHelektra Practice",
+          10,
+          60,
+          10
+        );
+        NmsStrategies.ACTION_BAR.execute(player, "&a¡Good luck!");
+        NmsStrategies.BOSS_BAR.execute(
+          player,
+          "&eHelektra Practice - &6Development Mode",
+          1.0f,
+          BossBar.Color.WHITE,
+          BossBar.Overlay.PROGRESS
+        );
+      },
+      20L
+    );
+
+    Optional<IProfile> cachedProfile = profileService.getCachedProfile(uuid);
+    IProfile profile;
+
+    if (cachedProfile.isPresent()) {
+      profile = cachedProfile.get();
+    } else {
+      Optional<IProfile> loadedProfile = profileService.getProfile(uuid).join();
+      if (loadedProfile.isEmpty()) {
+        player.kickPlayer(TranslationUtils.translate("profile.error"));
+        return;
+      }
+      profile = loadedProfile.get();
+      profileService.cacheProfile(profile);
+    }
+
+    ProfileState targetState = ProfileState.LOBBY;
+    boolean needsTransition = profile.getProfileState() != targetState;
+
+    profileStateManager.setState(player, targetState);
+
+    if (!needsTransition) {
+      hotbarService.apply(player, targetState);
+    }
+
+    player.sendMessage(TranslationUtils.translate("profile.loaded"));
   }
 
   @EventHandler
   public void onPlayerQuit(PlayerQuitEvent event) {
     var uuid = event.getPlayer().getUniqueId();
     helektra
-        .getProfileService()
-        .getProfile(uuid)
-        .thenAccept(opt -> opt.ifPresent(profile -> Bukkit.getScheduler().runTaskAsynchronously(helektra,
-            () -> helektra.getProfileService().saveProfile(profile))));
+      .getProfileService()
+      .getProfile(uuid)
+      .thenAccept(opt ->
+        opt.ifPresent(profile ->
+          Bukkit.getScheduler().runTaskAsynchronously(helektra, () ->
+            helektra.getProfileService().saveProfile(profile)
+          )
+        )
+      );
     NmsBossBarStrategy.remove(event.getPlayer());
   }
 
@@ -91,7 +138,9 @@ public class PlayerListeners implements Listener {
 
     if (event.getItem().isSimilar(BukkitUtils.GOLDEN_HEAD)) {
       player.removePotionEffect(XPotion.REGENERATION.get());
-      player.addPotionEffect(new PotionEffect(XPotion.REGENERATION.get(), 20 * 10, 1));
+      player.addPotionEffect(
+        new PotionEffect(XPotion.REGENERATION.get(), 20 * 10, 1)
+      );
     }
   }
 }
