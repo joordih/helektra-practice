@@ -7,11 +7,13 @@ import dev.voltic.helektra.api.IHelektraAPI;
 import dev.voltic.helektra.api.model.arena.IArenaService;
 import dev.voltic.helektra.api.model.kit.IKitService;
 import dev.voltic.helektra.api.model.match.IMatchService;
+import dev.voltic.helektra.api.model.profile.IFriendService;
 import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.scoreboard.IScoreboardService;
 import dev.voltic.helektra.api.repository.RepositoryFactory;
 import dev.voltic.helektra.plugin.api.HelektraAPI;
 import dev.voltic.helektra.plugin.di.ArenaModule;
+import dev.voltic.helektra.plugin.di.FriendModule;
 import dev.voltic.helektra.plugin.di.KitModule;
 import dev.voltic.helektra.plugin.di.MatchModule;
 import dev.voltic.helektra.plugin.di.MongoModule;
@@ -29,7 +31,9 @@ import dev.voltic.helektra.plugin.model.match.MatchServiceImpl;
 import dev.voltic.helektra.plugin.model.match.commands.DuelCommand;
 import dev.voltic.helektra.plugin.model.match.commands.QueueCommand;
 import dev.voltic.helektra.plugin.model.match.listeners.MatchListener;
+import dev.voltic.helektra.plugin.model.profile.commands.FriendCommand;
 import dev.voltic.helektra.plugin.model.profile.commands.SettingsCommand;
+import dev.voltic.helektra.plugin.model.profile.friend.listeners.FriendAddPromptListener;
 import dev.voltic.helektra.plugin.model.profile.hotbar.HotbarInteractListener;
 import dev.voltic.helektra.plugin.model.scoreboard.wrapper.ScoreboardListener;
 import dev.voltic.helektra.plugin.model.scoreboard.wrapper.ScoreboardUpdater;
@@ -73,6 +77,7 @@ public final class Helektra extends JavaPlugin {
   private MongoDatabase database;
   private IKitService kitService;
   private IProfileService profileService;
+  private IFriendService friendService;
   private IScoreboardService scoreboardService;
   private IMatchService matchService;
   private MenuFactory menuFactory;
@@ -143,6 +148,7 @@ public final class Helektra extends JavaPlugin {
     injector = Guice.createInjector(
       new MongoModule(settingsConfig),
       new KitModule(kitsConfig),
+      new FriendModule(),
       new ProfileModule(),
       new ProfileStateModule(),
       new UtilsModule(),
@@ -157,9 +163,10 @@ public final class Helektra extends JavaPlugin {
 
     database = injector.getInstance(MongoDatabase.class);
     repositoryFactory = new MongoRepositoryFactory(database);
+    friendService = injector.getInstance(IFriendService.class);
+    profileService = injector.getInstance(IProfileService.class);
     menuFactory = injector.getInstance(MenuFactory.class);
     kitService = injector.getInstance(IKitService.class);
-    profileService = injector.getInstance(IProfileService.class);
     scoreboardService = injector.getInstance(IScoreboardService.class);
     matchService = injector.getInstance(MatchServiceImpl.class);
     scoreboardUpdater = injector.getInstance(ScoreboardUpdater.class);
@@ -190,7 +197,8 @@ public final class Helektra extends JavaPlugin {
       ArenaBlockTrackingListener.class,
       ScoreboardListener.class,
       HotbarInteractListener.class,
-      MatchListener.class
+      MatchListener.class,
+      FriendAddPromptListener.class
     ).forEach(listenerClass -> {
       Object listener = injector.getInstance(listenerClass);
       Bukkit.getPluginManager().registerEvents((Listener) listener, this);
@@ -221,6 +229,9 @@ public final class Helektra extends JavaPlugin {
     );
     manager.registerCommands(
       builder.fromClass(injector.getInstance(DuelCommand.class))
+    );
+    manager.registerCommands(
+      builder.fromClass(injector.getInstance(FriendCommand.class))
     );
 
     log(

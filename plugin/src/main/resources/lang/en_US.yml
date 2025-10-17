@@ -10,7 +10,49 @@ general:
   must-be-player: "&cThis command can only be executed by a player."
   invalid-arguments: "&cInvalid arguments."
 
-# Profile Messages
+friends:
+  command:
+    help:
+      header: "&e&lHelektra - Friend Commands"
+      lines:
+        - "&7/friend manage &f- Open the friend management menu"
+        - "&7/friend add <player> &f- Add a friend"
+        - "&7/friend remove <player> &f- Remove a friend"
+        - "&7/friend list &f- List your friends"
+        - "&7/friend info <player> &f- Show friend information"
+    add:
+      self: "&cYou cannot add yourself."
+      not-found: "&cPlayer {player} could not be found."
+      already: "&cYou are already friends with {player}."
+      success: "&aYou are now friends with {player}."
+      notify: "&a{player} added you as a friend."
+    remove:
+      not-found: "&cYou are not friends with {player}."
+      success: "&cRemoved {player} from your friends list."
+      notify: "&c{player} removed you from their friends list."
+    list:
+      header: "&e&lYour Friends &7({count})"
+      entry: "&7- &f{name} &8(&7Status: {status}&8, &7Online: {online}&8)"
+      empty: "&cYou have no friends yet."
+    info:
+      not-found: "&cNo friend named {player} found."
+      header: "&eFriend: &f{name}"
+      status: "&7Status: {value}"
+      online: "&7Online: {value}"
+  status:
+    accepted: "&aFriend"
+    pending: "&ePending"
+    blocked: "&cBlocked"
+  online:
+    yes: "&aYes"
+    no: "&cNo"
+  prompt:
+    add:
+      start: "&eType the player name in chat, or type &c'cancel'&e to abort."
+      already: "&cYou already have a pending friend addition."
+      cancelled: "&cFriend invitation cancelled."
+      retry: "&cUnable to add that friend. Type another name or /friend add <player>."
+
 profile:
   loading: "&eLoading your profile..."
   loaded: "&aProfile loaded successfully!"
@@ -99,11 +141,6 @@ connection:
   first-join: "&aWelcome for the first time, {player}!"
   disconnect: "&e{player} &7has left the game"
 
-error:
-  generic: "&cAn error occurred. Please try again later."
-  database: "&cDatabase error. Please contact an administrator."
-  timeout: "&cRequest timed out. Please try again."
-
 arena:
   commands-header: "&6&lArena Commands"
   already-exists: "&cArena {id} already exists."
@@ -150,9 +187,6 @@ arena:
     spawn-a-outside: "Spawn A is outside the selected region"
     spawn-b-outside: "Spawn B is outside the selected region"
 
-error:
-  player-only: "&cThis command can only be executed by a player."
-
 match:
   no-active-matches: "&cThere are no active matches."
   active-matches-header: "&6Active Matches &7({count})"
@@ -174,6 +208,7 @@ queue:
   joined-ranked: "&aYou joined the ranked &e{kit} &aqueue!"
   already-in-queue: "&cYou are already in a queue or match!"
   ping-restriction: "&cYour ping does not meet the requirements for ranked matchmaking."
+  leave-queue: "&cYou have left the queue."
 
 duel:
   kit-name: "&e{name}"
@@ -216,3 +251,7 @@ ffa:
 
 error:
   profile-not-loaded: "&cYour profile is not loaded. Please try again later."
+  player-only: "&cThis command can only be executed by a player."
+  generic: "&cAn error occurred. Please try again later."
+  database: "&cDatabase error. Please contact an administrator."
+  timeout: "&cRequest timed out. Please try again."

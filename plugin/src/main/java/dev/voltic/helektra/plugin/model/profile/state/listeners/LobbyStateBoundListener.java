@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -13,20 +14,20 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 
-public class QueueStateBoundListener implements Listener {
+public class LobbyStateBoundListener implements Listener {
 
   private UUID bound;
 
   @Inject
-  public QueueStateBoundListener() {}
+  public LobbyStateBoundListener() {}
 
-  public QueueStateBoundListener bind(UUID bound) {
+  public LobbyStateBoundListener bind(UUID bound) {
     this.bound = bound;
     return this;
   }
 
   @EventHandler
-  public void onDrop(PlayerDropItemEvent event) {
+  public void onPlayerDrop(PlayerDropItemEvent event) {
     if (!matches(event.getPlayer().getUniqueId())) return;
     event.setCancelled(true);
   }
@@ -44,13 +45,20 @@ public class QueueStateBoundListener implements Listener {
     var clickedInventory = event.getClickedInventory();
     if (
       !matches(player.getUniqueId()) ||
+      clickedInventory == null ||
       !clickedInventory.equals(player.getInventory())
     ) return;
     event.setCancelled(true);
   }
 
   @EventHandler
-  public void onPlace(BlockPlaceEvent event) {
+  public void onPlayerBreakBlock(BlockBreakEvent event) {
+    if (!matches(event.getPlayer().getUniqueId())) return;
+    event.setCancelled(true);
+  }
+
+  @EventHandler
+  public void onPlayerPlaceBlock(BlockPlaceEvent event) {
     if (!matches(event.getPlayer().getUniqueId())) return;
     event.setCancelled(true);
   }

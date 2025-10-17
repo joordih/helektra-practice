@@ -1,5 +1,6 @@
 package dev.voltic.helektra.plugin.model.profile.state;
 
+import com.google.common.collect.Lists;
 import dev.voltic.helektra.api.model.profile.IProfile;
 import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.profile.ProfileState;
@@ -14,9 +15,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.google.common.collect.Lists;
-
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -27,16 +25,21 @@ public class ProfileStateManager {
   private final IProfileService profileService;
   private final IScoreboardService scoreboardService;
   private final ProfileStateListenerRegistry listenerRegistry;
+  private final ProfileHotbarService hotbarService;
   private final Map<ProfileState, ProfileStateHandler> handlers;
   private final Logger logger;
 
   @Inject
-  public ProfileStateManager(IProfileService profileService,
-      IScoreboardService scoreboardService,
-      Set<ProfileStateHandler> handlerSet,
-      ProfileStateListenerRegistry listenerRegistry) {
+  public ProfileStateManager(
+    IProfileService profileService,
+    IScoreboardService scoreboardService,
+    ProfileHotbarService hotbarService,
+    Set<ProfileStateHandler> handlerSet,
+    ProfileStateListenerRegistry listenerRegistry
+  ) {
     this.profileService = profileService;
     this.scoreboardService = scoreboardService;
+    this.hotbarService = hotbarService;
     this.listenerRegistry = listenerRegistry;
     this.handlers = new EnumMap<>(ProfileState.class);
     this.logger = Bukkit.getLogger();
@@ -46,29 +49,34 @@ public class ProfileStateManager {
   }
 
   public void setState(Player player, ProfileState newState) {
-    Optional<IProfile> profileOpt = profileService.getCachedProfile(player.getUniqueId());
-    if (profileOpt.isEmpty()) {
-      return;
-    }
+    Optional<IProfile> profileOpt = profileService.getCachedProfile(
+      player.getUniqueId()
+    );
+    if (profileOpt.isEmpty()) return;
 
     IProfile profile = profileOpt.get();
     ProfileState currentState = profile.getProfileState();
+
+    UUID playerId = player.getUniqueId();
+    listenerRegistry.unregister(playerId);
+
     if (currentState == newState) {
+      handleEnter(player, profile, playerId, newState);
+      ensureScoreboard(player);
       return;
     }
 
-    UUID playerId = player.getUniqueId();
-
-    listenerRegistry.unregister(playerId);
     handleExit(player, profile, currentState);
 
     profile.setProfileState(newState);
     profileService.saveProfile(profile);
 
     handleEnter(player, profile, playerId, newState);
-
     ensureScoreboard(player);
-    Bukkit.getPluginManager().callEvent(new ProfileStateChangeEvent(player, profile, currentState, newState));
+
+    Bukkit.getPluginManager().callEvent(
+      new ProfileStateChangeEvent(player, profile, currentState, newState)
+    );
   }
 
   private void handleExit(Player player, IProfile profile, ProfileState state) {
@@ -79,20 +87,31 @@ public class ProfileStateManager {
     runSafely(() -> handler.onExit(player, profile), handler, "exit", state);
   }
 
-  private void handleEnter(Player player, IProfile profile, UUID playerId, ProfileState state) {
+  private void handleEnter(
+    Player player,
+    IProfile profile,
+    UUID playerId,
+    ProfileState state
+  ) {
     ProfileStateHandler handler = handlers.get(state);
 
-    if (handler == null) {
-      return;
-    }
+    if (handler == null) return;
 
     runSafely(() -> handler.onEnter(player, profile), handler, "enter", state);
-    registerPlayerListeners(playerId, handler.createPlayerListeners(player, profile));
+    registerPlayerListeners(
+      playerId,
+      handler.createPlayerListeners(player, profile)
+    );
+
+    player.getInventory().clear();
+    hotbarService.apply(player, state);
   }
 
-  private void registerPlayerListeners(UUID playerId, Iterable<Listener> listeners) {
-    if (listeners == null)
-      return;
+  private void registerPlayerListeners(
+    UUID playerId,
+    Iterable<Listener> listeners
+  ) {
+    if (listeners == null) return;
 
     ArrayList<Listener> collected = Lists.newArrayList();
 
@@ -110,16 +129,30 @@ public class ProfileStateManager {
   }
 
   private void ensureScoreboard(Player player) {
-    scoreboardService.getScoreboard(player).orElseGet(() -> scoreboardService.createScoreboard(player));
+    scoreboardService
+      .getScoreboard(player)
+      .orElseGet(() -> scoreboardService.createScoreboard(player));
   }
 
-  private void runSafely(Runnable task, ProfileStateHandler handler, String stage, ProfileState state) {
+  private void runSafely(
+    Runnable task,
+    ProfileStateHandler handler,
+    String stage,
+    ProfileState state
+  ) {
     try {
       task.run();
     } catch (Exception exception) {
-      logger.log(Level.SEVERE,
-          "Error during profile state " + stage + " for " + state.name() + " using " + handler.getClass().getName(),
-          exception);
+      logger.log(
+        Level.SEVERE,
+        "Error during profile state " +
+          stage +
+          " for " +
+          state.name() +
+          " using " +
+          handler.getClass().getName(),
+        exception
+      );
     }
   }
 }

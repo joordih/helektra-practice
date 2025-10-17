@@ -30,7 +30,6 @@ public class PlayerListeners implements Listener {
   private final Helektra helektra;
   private final ProfileStateManager profileStateManager;
   private final IProfileService profileService;
-  private final ProfileHotbarService hotbarService;
 
   @Inject
   public PlayerListeners(
@@ -42,7 +41,6 @@ public class PlayerListeners implements Listener {
     this.helektra = helektra;
     this.profileStateManager = profileStateManager;
     this.profileService = profileService;
-    this.hotbarService = hotbarService;
   }
 
   @EventHandler
@@ -104,14 +102,7 @@ public class PlayerListeners implements Listener {
       profileService.cacheProfile(profile);
     }
 
-    ProfileState targetState = ProfileState.LOBBY;
-    boolean needsTransition = profile.getProfileState() != targetState;
-
-    profileStateManager.setState(player, targetState);
-
-    if (!needsTransition) {
-      hotbarService.apply(player, targetState);
-    }
+    profileStateManager.setState(player, ProfileState.LOBBY);
 
     player.sendMessage(TranslationUtils.translate("profile.loaded"));
   }

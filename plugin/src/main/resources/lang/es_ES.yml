@@ -79,6 +79,49 @@ kit:
     slot-updated: "&aSlot del kit '&e{kit}&a' establecido en &e{slot}&a."
     cloned: "&aKit '&e{source}&a' clonado como '&e{target}&a'."
 
+friends:
+  command:
+    help:
+      header: "&e&lHelektra - Comandos de Amigos"
+      lines:
+        - "&7/friend manage &f- Abre el menú de amigos"
+        - "&7/friend add <jugador> &f- Añade un amigo"
+        - "&7/friend remove <jugador> &f- Elimina un amigo"
+        - "&7/friend list &f- Lista tus amigos"
+        - "&7/friend info <jugador> &f- Información de un amigo"
+    add:
+      self: "&cNo puedes agregarte a ti mismo."
+      not-found: "&cEl jugador {player} no fue encontrado."
+      already: "&cYa eres amigo de {player}."
+      success: "&aAhora eres amigo de {player}."
+      notify: "&a{player} te ha añadido como amigo."
+    remove:
+      not-found: "&cNo eres amigo de {player}."
+      success: "&cHas eliminado a {player} de tu lista de amigos."
+      notify: "&c{player} te ha eliminado de su lista de amigos."
+    list:
+      header: "&e&lTus Amigos &7({count})"
+      entry: "&7- &f{name} &8(&7Estado: {status}&8, &7En línea: {online}&8)"
+      empty: "&cAún no tienes amigos."
+    info:
+      not-found: "&cNo se encontró un amigo llamado {player}."
+      header: "&eAmigo: &f{name}"
+      status: "&7Estado: {value}"
+      online: "&7En línea: {value}"
+  status:
+    accepted: "&aAmigo"
+    pending: "&ePendiente"
+    blocked: "&cBloqueado"
+  online:
+    yes: "&aSí"
+    no: "&cNo"
+  prompt:
+    add:
+      start: "&eEscribe el nombre del jugador en el chat, o escribe &c'cancel'&e para cancelar."
+      already: "&cYa tienes un proceso de añadir amigo en curso."
+      cancelled: "&cInvitación de amigo cancelada."
+      retry: "&cNo se pudo añadir ese amigo. Escribe otro nombre o usa /friend add <jugador>."
+
 time:
   teleporting: "&f&lTELETRANSPORTANDO"
   traveling-day: "&eViajando al amanecer..."
@@ -95,11 +138,6 @@ connection:
   welcome: "&aBienvenido a &6Helektra&a, {player}!"
   first-join: "&aBienvenido por primera vez, {player}!"
   disconnect: "&e{player} &7ha salido del juego"
-
-error:
-  generic: "&cOcurrió un error. Por favor intenta más tarde."
-  database: "&cError de base de datos. Por favor contacta a un administrador."
-  timeout: "&cTiempo de espera agotado. Por favor intenta de nuevo."
 
 arena:
   commands-header: "&6&lComandos de Arena"
@@ -147,9 +185,6 @@ arena:
     spawn-a-outside: "Spawn A está fuera de la región seleccionada"
     spawn-b-outside: "Spawn B está fuera de la región seleccionada"
 
-error:
-  player-only: "&cEste comando solo puede ser ejecutado por un jugador."
-
 match:
   no-active-matches: "&cNo hay partidas activas."
   active-matches-header: "&6Partidas Activas &7({count})"
@@ -171,6 +206,7 @@ queue:
   joined-ranked: "&aTe has unido a la cola ranked de &e{kit}&a!"
   already-in-queue: "&c¡Ya estás en una cola o partida!"
   ping-restriction: "&cTu ping no cumple los requisitos para matchmaking ranked."
+  leave-queue: "&cHas salido de la cola."
 
 duel:
   kit-name: "&e{name}"
@@ -213,3 +249,7 @@ ffa:
 
 error:
   profile-not-loaded: "&cTu perfil no está cargado. Por favor intenta más tarde."
+  player-only: "&cEste comando solo puede ser ejecutado por un jugador."
+  generic: "&cOcurrió un error. Por favor intenta más tarde."
+  database: "&cError de base de datos. Por favor contacta a un administrador."
+  timeout: "&cTiempo de espera agotado. Por favor intenta de nuevo."

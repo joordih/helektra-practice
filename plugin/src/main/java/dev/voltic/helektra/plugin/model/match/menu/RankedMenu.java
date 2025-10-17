@@ -4,6 +4,7 @@ import dev.voltic.helektra.api.model.kit.IKit;
 import dev.voltic.helektra.api.model.kit.IKitService;
 import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.profile.ProfileState;
+import dev.voltic.helektra.plugin.model.profile.state.ProfileStateManager;
 import dev.voltic.helektra.plugin.utils.MenuConfigHelper;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
 import dev.voltic.helektra.plugin.utils.menu.InjectableMenu;
@@ -22,16 +23,19 @@ public class RankedMenu extends InjectableMenu {
 
   private final IKitService kitService;
   private final IProfileService profileService;
+  private final ProfileStateManager profileStateManager;
 
   @Inject
   public RankedMenu(
     MenuConfigHelper menuConfig,
     IKitService kitService,
-    IProfileService profileService
+    IProfileService profileService,
+    ProfileStateManager profileStateManager
   ) {
     super(menuConfig, "ranked-kits");
     this.kitService = kitService;
     this.profileService = profileService;
+    this.profileStateManager = profileStateManager;
   }
 
   @Override
@@ -80,7 +84,7 @@ public class RankedMenu extends InjectableMenu {
           lore.add(TranslationUtils.translate("queue.click-to-join"));
 
           setItem(
-            slot.incrementAndGet(),
+            slot.getAndIncrement(),
             new ItemBuilder(material)
               .name(
                 TranslationUtils.translate(
@@ -121,8 +125,9 @@ public class RankedMenu extends InjectableMenu {
               player.getPing() <=
               profile.getSettings().getPingMatchmaking().max())
           ) {
-            profile.setProfileState(ProfileState.IN_QUEUE);
+            profileStateManager.setState(player, ProfileState.IN_QUEUE);
             kit.incrementQueue();
+
             player.sendMessage(
               TranslationUtils.translate(
                 "queue.joined-ranked",

@@ -48,27 +48,13 @@ hotbar:
 
   in_queue:
     items:
-      status:
-        slot: 0
-        material: "PAPER"
-        name: "&aQueue Status"
-        lore:
-          - "&7View your current queue"
-        action: "/queue status"
-      select_kit:
-        slot: 4
-        material: "CHEST"
-        name: "&eSelect Kit"
-        lore:
-          - "&7Open the queue kit selector"
-        action: "/queue"
       leave:
         slot: 8
-        material: "BARRIER"
+        material: "REDSTONE"
         name: "&cLeave Queue"
         lore:
           - "&7Cancel the current queue"
-        action: "/queue leave"
+        action: "LEAVE_QUEUE"
 
   spectator:
     items:

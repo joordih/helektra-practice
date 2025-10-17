@@ -3,7 +3,7 @@
 
 settings:
   title: "&6⚙ Settings"
-  size: 9  # Must be multiple of 9 (9, 18, 27, 36, 45, 54)
+  size: 9 # Must be multiple of 9 (9, 18, 27, 36, 45, 54)
   items:
     duel-requests:
       position: 0
@@ -20,7 +20,7 @@ settings:
       messages:
         enabled: "&aDuel requests enabled"
         disabled: "&cDuel requests disabled"
-    
+
     ping-matchmaking:
       position: 1
       material-enabled: LEVER
@@ -37,7 +37,7 @@ settings:
         - "&eRight click &fto &6modify"
       status-enabled: "&a&l&oENABLED"
       status-disabled: "&c&l&oDISABLED"
-    
+
     lobby-time:
       position: 2
       material: CLOCK
@@ -57,7 +57,7 @@ settings:
         night-display: "&fNight"
         night-selected: "&a&l&oNIGHT"
       message: "&eLobby time changed"
-    
+
     event-messages:
       position: 3
       material: PAPER
@@ -73,7 +73,7 @@ settings:
       messages:
         enabled: "&aEvent messages enabled"
         disabled: "&cEvent messages disabled"
-    
+
     view-players:
       position: 4
       material: PLAYER_HEAD
@@ -89,7 +89,7 @@ settings:
       messages:
         enabled: "&aView players enabled"
         disabled: "&cView players disabled"
-    
+
     party-requests:
       position: 5
       material: CAKE
@@ -105,7 +105,7 @@ settings:
       messages:
         enabled: "&aParty requests enabled"
         disabled: "&cParty requests disabled"
-    
+
     spectators:
       position: 6
       material: ENDER_EYE
@@ -122,6 +122,121 @@ settings:
         enabled: "&aSpectators enabled"
         disabled: "&cSpectators disabled"
 
+friends:
+  title: "&a☻ Friends"
+  size: 54
+  content:
+    start-slot: 10
+    end-slot: 34
+  messages:
+    profile-missing: "&cUnable to load your profile."
+    empty: "&eYou have no friends yet."
+  items:
+    top-border-left:
+      position: 0
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&0"
+      lore: []
+    top-border-right:
+      position: 8
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&0"
+      lore: []
+    bottom-border-left:
+      position: 36
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&0"
+      lore: []
+    bottom-border-right:
+      position: 44
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&0"
+      lore: []
+    friend-entry:
+      material: PLAYER_HEAD
+      name: "&a#{position} &f{friend}"
+      lore:
+        - "&7Status&8: {status}"
+        - "&7Online&8: {online}"
+        - ""
+        - "&eClick to manage"
+      placeholders:
+        status:
+          pending: "&ePending"
+          accepted: "&aFriend"
+          blocked: "&cBlocked"
+        online: "&aOnline"
+        offline: "&cOffline"
+    empty-slot:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&7Empty Slot"
+      lore:
+        - "&7Add more friends using the button below."
+    pagination-previous:
+      position: 45
+      material: ARROW
+      name: "&ePrevious Page"
+      lore:
+        - "&7Go to &fPage {target-page}"
+    pagination-next:
+      position: 53
+      material: ARROW
+      name: "&eNext Page"
+      lore:
+        - "&7Go to &fPage {target-page}"
+    add-friend:
+      position: 49
+      material: EMERALD
+      name: "&aAdd Friend"
+      lore:
+        - "&7Click to add a new friend."
+        - "&8You will be asked for their name in chat."
+
+friend-options:
+  title: "&aFriend Options"
+  size: 27
+  messages:
+    no-selection: "&cSelect a friend first."
+  items:
+    info:
+      position: 13
+      material: PAPER
+      name: "&b{friend}"
+      lore:
+        - "&7Status&8: {status}"
+        - "&7Online&8: {online}"
+    remove:
+      position: 11
+      material: REDSTONE
+      name: "&cRemove Friend"
+      lore:
+        - "&7Remove &f{friend} &7from your friends list."
+      messages:
+        success: "&cRemoved {friend} from your friends list."
+    invite:
+      position: 15
+      material: ENDER_PEARL
+      name: "&aInvite to Party"
+      lore:
+        - "&7Send a party invite to &f{friend}&7."
+      command: "party invite {friend}"
+      messages:
+        success: "&aSent a party invite to {friend}."
+    block:
+      position: 17
+      material: BARRIER
+      name: "&cBlock Friend"
+      lore:
+        - "&7Block &f{friend} &7from interacting with you."
+      messages:
+        success: "&cBlocked {friend}."
+    back:
+      position: 26
+      material: ARROW
+      name: "&cBack"
+      lore:
+        - "&7Return to your friends list."
+
 ping-matchmaking:
   title: "&ePing Matchmaking Settings"
   size: 27
@@ -137,7 +252,7 @@ ping-matchmaking:
         - "&7find matches."
         - ""
         - "&eUse the buttons below"
-    
+
     # Min Ping Controls
     min-ping-decrease-10:
       position: 1
@@ -145,28 +260,28 @@ ping-matchmaking:
       name: "&c-10 ms"
       lore:
         - "&7Click to decrease"
-    
+
     min-ping-decrease-1:
       position: 2
       material: ORANGE_WOOL
       name: "&6-1 ms"
       lore:
         - "&7Click to decrease"
-    
+
     min-ping-increase-1:
       position: 6
       material: LIME_WOOL
       name: "&a+1 ms"
       lore:
         - "&7Click to increase"
-    
+
     min-ping-increase-10:
       position: 7
       material: GREEN_WOOL
       name: "&a+10 ms"
       lore:
         - "&7Click to increase"
-    
+
     # Max Ping Display
     max-ping-display:
       position: 13
@@ -178,7 +293,7 @@ ping-matchmaking:
         - "&7find matches."
         - ""
         - "&eUse the buttons below"
-    
+
     # Max Ping Controls
     max-ping-decrease-10:
       position: 10
@@ -186,28 +301,28 @@ ping-matchmaking:
       name: "&c-10 ms"
       lore:
         - "&7Click to decrease"
-    
+
     max-ping-decrease-1:
       position: 11
       material: ORANGE_WOOL
       name: "&6-1 ms"
       lore:
         - "&7Click to decrease"
-    
+
     max-ping-increase-1:
       position: 15
       material: LIME_WOOL
       name: "&a+1 ms"
       lore:
         - "&7Click to increase"
-    
+
     max-ping-increase-10:
       position: 16
       material: GREEN_WOOL
       name: "&a+10 ms"
       lore:
         - "&7Click to increase"
-    
+
     # Back Button
     back:
       position: 18
@@ -215,7 +330,7 @@ ping-matchmaking:
       name: "&cBack"
       lore:
         - "&7Back to settings menu"
-    
+
     # Presets
     preset-low:
       position: 24
@@ -227,7 +342,7 @@ ping-matchmaking:
         - "&eClick to apply"
       messages:
         applied: "&aPreset applied: &fLow Ping"
-    
+
     preset-medium:
       position: 25
       material: DIAMOND
@@ -238,7 +353,7 @@ ping-matchmaking:
         - "&eClick to apply"
       messages:
         applied: "&aPreset applied: &fMedium Ping"
-    
+
     preset-unlimited:
       position: 26
       material: NETHER_STAR

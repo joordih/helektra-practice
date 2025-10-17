@@ -1,11 +1,11 @@
 package dev.voltic.helektra.api.model.profile;
 
-import java.util.UUID;
-
 import dev.voltic.helektra.api.model.Model;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public interface IProfile extends Model {
-
   UUID getUniqueId();
 
   String getName();
@@ -24,6 +24,14 @@ public interface IProfile extends Model {
 
   void setSettings(Settings settings);
 
+  CompletableFuture<List<IFriend>> getFriends();
+
+  CompletableFuture<Void> addFriend(IFriend friend);
+
+  CompletableFuture<Void> removeFriend(UUID friendId);
+
+  CompletableFuture<Boolean> isFriend(UUID friendId);
+
   default PingMatchmaking getPingMatchmaking() {
     return getSettings().getPingMatchmaking();
   }
@@ -41,10 +49,12 @@ public interface IProfile extends Model {
   }
 
   default void setMinPingMatchmaking(int min) {
-    if (min < 0)
-      throw new IllegalArgumentException("The ping cannot be negative");
-    if (getPingMatchmaking().getMax() < min)
-      throw new IllegalArgumentException("The maximum ping cannot be less than the minimum");
+    if (min < 0) throw new IllegalArgumentException(
+      "The ping cannot be negative"
+    );
+    if (getPingMatchmaking().getMax() < min) throw new IllegalArgumentException(
+      "The maximum ping cannot be less than the minimum"
+    );
     getPingMatchmaking().setMin(min);
   }
 
@@ -53,13 +63,13 @@ public interface IProfile extends Model {
   }
 
   default void setMaxPingMatchmaking(int max) {
-    if (max < getPingMatchmaking().getMin())
-      throw new IllegalArgumentException("The maximum ping cannot be less than the minimum");
+    if (max < getPingMatchmaking().getMin()) throw new IllegalArgumentException(
+      "The maximum ping cannot be less than the minimum"
+    );
     getPingMatchmaking().setMax(max);
   }
 
   interface Settings {
-
     boolean isAllowDuels();
 
     void setAllowDuels(boolean allowDuels);
