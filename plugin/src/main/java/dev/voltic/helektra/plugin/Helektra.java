@@ -32,9 +32,12 @@ import dev.voltic.helektra.plugin.model.kit.commands.KitCommand;
 import dev.voltic.helektra.plugin.model.match.MatchServiceImpl;
 import dev.voltic.helektra.plugin.model.match.commands.DuelCommand;
 import dev.voltic.helektra.plugin.model.match.commands.QueueCommand;
+import dev.voltic.helektra.plugin.model.match.commands.SpectateCommand;
 import dev.voltic.helektra.plugin.model.match.listeners.MatchEndListener;
 import dev.voltic.helektra.plugin.model.match.listeners.MatchListener;
+import dev.voltic.helektra.plugin.model.match.listeners.MatchRuleListener;
 import dev.voltic.helektra.plugin.model.match.listeners.QueueMatchListener;
+import dev.voltic.helektra.plugin.model.match.listeners.SpectatorSessionListener;
 import dev.voltic.helektra.plugin.model.profile.commands.FriendCommand;
 import dev.voltic.helektra.plugin.model.profile.commands.SettingsCommand;
 import dev.voltic.helektra.plugin.model.profile.friend.listeners.FriendAddPromptListener;
@@ -156,9 +159,9 @@ public final class Helektra extends JavaPlugin {
             new ProfileModule(),
             new ProfileStateModule(),
             new UtilsModule(),
-            new ArenaModule(),
+            new ArenaModule(settingsConfig),
             new ScoreboardModule(),
-            new MatchModule(),
+            new MatchModule(settingsConfig),
             binder -> {
                 binder.bind(Helektra.class).toInstance(this);
                 binder.bind(JavaPlugin.class).toInstance(this);
@@ -203,9 +206,11 @@ public final class Helektra extends JavaPlugin {
             ScoreboardListener.class,
             HotbarInteractListener.class,
             MatchListener.class,
+            MatchRuleListener.class,
             MatchEndListener.class,
             QueueMatchListener.class,
-            FriendAddPromptListener.class
+            FriendAddPromptListener.class,
+            SpectatorSessionListener.class
         ).forEach(listenerClass -> {
             Object listener = injector.getInstance(listenerClass);
             Bukkit.getPluginManager().registerEvents((Listener) listener, this);
@@ -238,6 +243,9 @@ public final class Helektra extends JavaPlugin {
         );
         manager.registerCommands(
             builder.fromClass(injector.getInstance(FriendCommand.class))
+        );
+        manager.registerCommands(
+            builder.fromClass(injector.getInstance(SpectateCommand.class))
         );
 
         manager.registerCommands(

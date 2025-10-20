@@ -30,6 +30,10 @@ public class MatchArenaTracker {
         assignments.put(matchId, instance);
     }
 
+    public ArenaInstance get(String matchId) {
+        return assignments.get(matchId);
+    }
+
     public CompletableFuture<Void> release(String matchId) {
         ArenaInstance instance = assignments.remove(matchId);
         if (instance == null) {

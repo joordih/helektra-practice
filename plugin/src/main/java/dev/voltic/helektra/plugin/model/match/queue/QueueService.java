@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import dev.voltic.helektra.api.model.arena.Arena;
 import dev.voltic.helektra.api.model.arena.ArenaInstance;
 import dev.voltic.helektra.api.model.arena.IArenaService;
+import dev.voltic.helektra.api.model.arena.IArenaVisibilityService;
 import dev.voltic.helektra.api.model.kit.IKit;
 import dev.voltic.helektra.api.model.kit.IKitService;
 import dev.voltic.helektra.api.model.kit.QueueType;
@@ -56,6 +57,7 @@ public class QueueService implements IQueueService {
     private final ArenaLocationResolver locationResolver;
     private final JavaPlugin plugin;
     private final MatchArenaTracker matchArenaTracker;
+    private final IArenaVisibilityService visibilityService;
 
     @Inject
     public QueueService(
@@ -66,7 +68,8 @@ public class QueueService implements IQueueService {
         ProfileStateManager profileStateManager,
         ArenaLocationResolver locationResolver,
         JavaPlugin plugin,
-        MatchArenaTracker matchArenaTracker
+        MatchArenaTracker matchArenaTracker,
+        IArenaVisibilityService visibilityService
     ) {
         this.kitService = kitService;
         this.profileService = profileService;
@@ -76,6 +79,7 @@ public class QueueService implements IQueueService {
         this.locationResolver = locationResolver;
         this.plugin = plugin;
         this.matchArenaTracker = matchArenaTracker;
+        this.visibilityService = visibilityService;
     }
 
     @Override
@@ -193,6 +197,8 @@ public class QueueService implements IQueueService {
         if (context == null) {
             return CompletableFuture.completedFuture(null);
         }
+        visibilityService.releasePlayers(context.participants());
+        visibilityService.clearEntities(context.instance().getInstanceId());
         CompletableFuture<Void> releaseFuture = matchArenaTracker.release(
             matchId
         );
@@ -379,6 +385,7 @@ public class QueueService implements IQueueService {
                 match.getMatchId(),
                 new QueueMatchContext(kit.getName(), instance, participantIds)
             );
+            visibilityService.assignPlayers(instance, participantIds);
             participants.forEach(ticket -> kit.incrementPlaying());
             profileStateManager.setState(first, ProfileState.IN_GAME);
             profileStateManager.setState(second, ProfileState.IN_GAME);

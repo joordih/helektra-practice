@@ -1,12 +1,18 @@
 settings:
-  lang: "en_US"
-  mongodb:
-    uri: "mongodb://localhost:27017"
-    database: "helektra"
-  other:
-    golden-head:
-      name: "&6&lGolden Head"
-      lore:
-        - "&5This is a golden head!"
-        - "&5Consume it to get superpowers!"
-  spawn: world;0.00;0.00;0.00;0.00;0.00
+    lang: "en_US"
+    mongodb:
+        uri: "mongodb://localhost:27017"
+        database: "helektra"
+    arena:
+        visibility:
+            gap-chunks: 64
+            hide-entities: true
+            hide-players: true
+            multiworld-enabled: true
+    other:
+        golden-head:
+            name: "&6&lGolden Head"
+            lore:
+                - "&5This is a golden head!"
+                - "&5Consume it to get superpowers!"
+    spawn: world;0.00;0.00;0.00;0.00;0.00

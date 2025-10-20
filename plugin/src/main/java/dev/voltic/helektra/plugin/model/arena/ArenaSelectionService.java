@@ -2,7 +2,6 @@ package dev.voltic.helektra.plugin.model.arena;
 
 import com.google.inject.Singleton;
 import dev.voltic.helektra.api.model.arena.*;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,26 +9,32 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 public class ArenaSelectionService implements IArenaSelectionService {
-    private final Map<UUID, SelectionData> selections = new ConcurrentHashMap<>();
+
+    private final Map<UUID, SelectionData> selections =
+        new ConcurrentHashMap<>();
 
     @Override
     public void setPosition1(UUID playerId, Location location) {
-        selections.computeIfAbsent(playerId, k -> new SelectionData()).pos1 = location;
+        selections.computeIfAbsent(playerId, k -> new SelectionData()).pos1 =
+            location;
     }
 
     @Override
     public void setPosition2(UUID playerId, Location location) {
-        selections.computeIfAbsent(playerId, k -> new SelectionData()).pos2 = location;
+        selections.computeIfAbsent(playerId, k -> new SelectionData()).pos2 =
+            location;
     }
 
     @Override
     public void setSpawnA(UUID playerId, Location location) {
-        selections.computeIfAbsent(playerId, k -> new SelectionData()).spawnA = location;
+        selections.computeIfAbsent(playerId, k -> new SelectionData()).spawnA =
+            location;
     }
 
     @Override
     public void setSpawnB(UUID playerId, Location location) {
-        selections.computeIfAbsent(playerId, k -> new SelectionData()).spawnB = location;
+        selections.computeIfAbsent(playerId, k -> new SelectionData()).spawnB =
+            location;
     }
 
     @Override
@@ -47,13 +52,17 @@ public class ArenaSelectionService implements IArenaSelectionService {
     @Override
     public Optional<Location> getSpawnA(UUID playerId) {
         SelectionData data = selections.get(playerId);
-        return data != null ? Optional.ofNullable(data.spawnA) : Optional.empty();
+        return data != null
+            ? Optional.ofNullable(data.spawnA)
+            : Optional.empty();
     }
 
     @Override
     public Optional<Location> getSpawnB(UUID playerId) {
         SelectionData data = selections.get(playerId);
-        return data != null ? Optional.ofNullable(data.spawnB) : Optional.empty();
+        return data != null
+            ? Optional.ofNullable(data.spawnB)
+            : Optional.empty();
     }
 
     @Override
@@ -74,11 +83,17 @@ public class ArenaSelectionService implements IArenaSelectionService {
         int maxY = (int) Math.max(data.pos1.getY(), data.pos2.getY());
         int maxZ = (int) Math.max(data.pos1.getZ(), data.pos2.getZ());
 
-        return Optional.of(Region.builder()
-            .world(data.pos1.getWorld())
-            .minX(minX).minY(minY).minZ(minZ)
-            .maxX(maxX).maxY(maxY).maxZ(maxZ)
-            .build());
+        return Optional.of(
+            Region.builder()
+                .world(data.pos1.getWorld())
+                .minX(minX)
+                .minY(minY)
+                .minZ(minZ)
+                .maxX(maxX)
+                .maxY(maxY)
+                .maxZ(maxZ)
+                .build()
+        );
     }
 
     @Override
@@ -89,15 +104,18 @@ public class ArenaSelectionService implements IArenaSelectionService {
     @Override
     public boolean hasCompleteSelection(UUID playerId) {
         SelectionData data = selections.get(playerId);
-        return data != null && data.pos1 != null && data.pos2 != null 
-            && data.spawnA != null && data.spawnB != null;
+        return (
+            data != null &&
+            data.pos1 != null &&
+            data.pos2 != null &&
+            data.spawnA != null &&
+            data.spawnB != null
+        );
     }
 
     @Override
     public long estimateVolume(UUID playerId) {
-        return getSelectedRegion(playerId)
-            .map(Region::getVolume)
-            .orElse(0L);
+        return getSelectedRegion(playerId).map(Region::getVolume).orElse(0L);
     }
 
     @Override
@@ -140,10 +158,22 @@ public class ArenaSelectionService implements IArenaSelectionService {
         }
 
         if (data.spawnA != null && data.spawnB != null) {
-            if (!region.contains((int) data.spawnA.getX(), (int) data.spawnA.getY(), (int) data.spawnA.getZ())) {
+            if (
+                !region.contains(
+                    (int) data.spawnA.getX(),
+                    (int) data.spawnA.getY(),
+                    (int) data.spawnA.getZ()
+                )
+            ) {
                 result.addError("arena.validation.spawn-a-outside");
             }
-            if (!region.contains((int) data.spawnB.getX(), (int) data.spawnB.getY(), (int) data.spawnB.getZ())) {
+            if (
+                !region.contains(
+                    (int) data.spawnB.getX(),
+                    (int) data.spawnB.getY(),
+                    (int) data.spawnB.getZ()
+                )
+            ) {
                 result.addError("arena.validation.spawn-b-outside");
             }
         }
@@ -152,6 +182,7 @@ public class ArenaSelectionService implements IArenaSelectionService {
     }
 
     private static class SelectionData {
+
         Location pos1;
         Location pos2;
         Location spawnA;

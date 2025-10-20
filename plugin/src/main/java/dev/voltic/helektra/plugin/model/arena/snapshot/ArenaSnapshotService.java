@@ -238,7 +238,7 @@ public class ArenaSnapshotService implements IArenaSnapshotService {
                 CompletableFuture<Void> resetFuture = pasteFuture
                     .thenCompose(v ->
                         schedulerService.runSync(() -> {
-                            worldGateway.clearEntities(context.getRegion());
+                            worldGateway.clearEntities(context.getRegion(), 2);
                             worldGateway.clearLiquids(context.getRegion());
                         })
                     )

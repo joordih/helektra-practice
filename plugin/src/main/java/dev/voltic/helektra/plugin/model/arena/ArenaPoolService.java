@@ -2,30 +2,30 @@ package dev.voltic.helektra.plugin.model.arena;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import dev.voltic.helektra.api.model.arena.Arena;
 import dev.voltic.helektra.api.model.arena.ArenaInstance;
+import dev.voltic.helektra.api.model.arena.ArenaPoolSnapshot;
 import dev.voltic.helektra.api.model.arena.IArenaPoolService;
 import dev.voltic.helektra.api.model.arena.IArenaResetService;
 import dev.voltic.helektra.api.model.arena.IArenaService;
 import dev.voltic.helektra.api.model.arena.IArenaSnapshotService;
 import dev.voltic.helektra.api.model.arena.IArenaTemplateService;
+import dev.voltic.helektra.api.model.arena.IMetricsService;
 import dev.voltic.helektra.api.model.arena.PoolScaleObserver;
 import dev.voltic.helektra.plugin.model.arena.event.BukkitArenaInstanceAssignedEvent;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import org.bukkit.Bukkit;
 
 @Singleton
-@SuppressWarnings("unused")
 public class ArenaPoolService implements IArenaPoolService {
 
     private final Map<String, ArenaPool> pools = new ConcurrentHashMap<>();
@@ -33,32 +33,32 @@ public class ArenaPoolService implements IArenaPoolService {
     private final IArenaResetService resetService;
     private final IArenaService arenaService;
     private final IArenaSnapshotService snapshotService;
+    private final IMetricsService metricsService;
 
     @Inject
     public ArenaPoolService(
         IArenaTemplateService templateService,
         IArenaResetService resetService,
         IArenaService arenaService,
-        IArenaSnapshotService snapshotService
+        IArenaSnapshotService snapshotService,
+        IMetricsService metricsService
     ) {
         this.templateService = templateService;
         this.resetService = resetService;
         this.arenaService = arenaService;
         this.snapshotService = snapshotService;
+        this.metricsService = metricsService;
     }
 
     @Override
     public CompletableFuture<ArenaInstance> acquire(String arenaId) {
         long startTime = System.currentTimeMillis();
-
         return getOrCreatePool(arenaId).thenCompose(pool -> {
             ArenaInstance instance = pool.pollAvailable();
-
             if (instance != null) {
                 instance.setState(ArenaInstance.ArenaInstanceState.IN_USE);
                 instance.setLastUsedAt(Instant.now());
                 instance.setUsageCount(instance.getUsageCount() + 1);
-
                 long waitTime = System.currentTimeMillis() - startTime;
                 Bukkit.getPluginManager().callEvent(
                     new BukkitArenaInstanceAssignedEvent(
@@ -68,10 +68,8 @@ public class ArenaPoolService implements IArenaPoolService {
                         waitTime
                     )
                 );
-
                 return CompletableFuture.completedFuture(instance);
             }
-
             return templateService
                 .cloneFromTemplate(arenaId)
                 .thenApply(newInstance -> {
@@ -81,7 +79,6 @@ public class ArenaPoolService implements IArenaPoolService {
                     newInstance.setLastUsedAt(Instant.now());
                     newInstance.setUsageCount(1);
                     pool.registerInUse(newInstance);
-
                     long waitTime = System.currentTimeMillis() - startTime;
                     Bukkit.getPluginManager().callEvent(
                         new BukkitArenaInstanceAssignedEvent(
@@ -91,7 +88,6 @@ public class ArenaPoolService implements IArenaPoolService {
                             waitTime
                         )
                     );
-
                     return newInstance;
                 });
         });
@@ -103,10 +99,8 @@ public class ArenaPoolService implements IArenaPoolService {
         if (pool == null) {
             return CompletableFuture.completedFuture(null);
         }
-
         pool.markResetting(instance);
         instance.setState(ArenaInstance.ArenaInstanceState.RESETTING);
-
         return resetService
             .resetInstance(instance)
             .thenAccept(v -> {
@@ -188,14 +182,14 @@ public class ArenaPoolService implements IArenaPoolService {
                 for (int i = 0; i < difference; i++) {
                     CompletableFuture<Void> future = templateService
                         .cloneFromTemplate(arenaId)
-                        .thenAccept(instance -> {
-                            pool.addInstance(instance);
+                        .thenAccept(pool::addInstanceAndNotify)
+                        .thenRun(() ->
                             progressObserver.onProgress(
                                 arenaId,
                                 completed.incrementAndGet(),
                                 totalOperations
-                            );
-                        });
+                            )
+                        );
                     futures.add(future);
                 }
                 return CompletableFuture.allOf(
@@ -237,28 +231,57 @@ public class ArenaPoolService implements IArenaPoolService {
         }
     }
 
-    private CompletableFuture<ArenaPool> getOrCreatePool(String arenaId) {
-        if (pools.containsKey(arenaId)) {
-            return CompletableFuture.completedFuture(pools.get(arenaId));
+    @Override
+    public ArenaPoolSnapshot getSnapshot(String arenaId) {
+        ArenaPool pool = pools.get(arenaId);
+        int available = 0;
+        int inUse = 0;
+        int resetting = 0;
+        int total = 0;
+        if (pool != null) {
+            PoolCounts counts = pool.counts();
+            available = counts.available();
+            inUse = counts.inUse();
+            resetting = counts.resetting();
+            total = counts.total();
         }
+        double utilization = total == 0 ? 0.0 : inUse / (double) total;
+        long averageReset = metricsService
+            .getMetrics(arenaId)
+            .getAverageResetDurationMs();
+        return ArenaPoolSnapshot.builder()
+            .arenaId(arenaId)
+            .available(available)
+            .inUse(inUse)
+            .resetting(resetting)
+            .utilization(utilization)
+            .averageResetDurationMs(averageReset)
+            .build();
+    }
 
+    private CompletableFuture<ArenaPool> getOrCreatePool(String arenaId) {
+        ArenaPool existing = pools.get(arenaId);
+        if (existing != null) {
+            return CompletableFuture.completedFuture(existing);
+        }
+        ArenaPool created = new ArenaPool();
+        ArenaPool previous = pools.putIfAbsent(arenaId, created);
+        ArenaPool pool = previous != null ? previous : created;
+        if (previous != null) {
+            return CompletableFuture.completedFuture(pool);
+        }
         return arenaService
             .getArena(arenaId)
             .map(arena -> {
-                ArenaPool pool = new ArenaPool();
-                pools.put(arenaId, pool);
-
                 int preloadCount = arena.getPoolConfig().getPreloaded();
                 List<CompletableFuture<Void>> preloadFutures =
                     new ArrayList<>();
-
                 for (int i = 0; i < preloadCount; i++) {
                     CompletableFuture<Void> future = templateService
                         .cloneFromTemplate(arenaId)
-                        .thenAccept(pool::addInstance);
+                        .thenAccept(pool::addInstanceAndNotify);
                     preloadFutures.add(future);
                 }
-
                 return CompletableFuture.allOf(
                     preloadFutures.toArray(new CompletableFuture[0])
                 ).thenApply(v -> pool);
@@ -270,104 +293,173 @@ public class ArenaPoolService implements IArenaPoolService {
             );
     }
 
-    private static class ArenaPool {
+    private static final class ArenaPool {
 
-        private final Queue<ArenaInstance> available =
-            new ConcurrentLinkedQueue<>();
+        private final ArrayDeque<ArenaInstance> available = new ArrayDeque<>();
         private final Set<ArenaInstance> inUse = ConcurrentHashMap.newKeySet();
         private final Set<ArenaInstance> resetting =
             ConcurrentHashMap.newKeySet();
         private final Set<ArenaInstance> all = ConcurrentHashMap.newKeySet();
+        private final ReentrantLock lock = new ReentrantLock();
 
-        void addInstance(ArenaInstance instance) {
-            all.add(instance);
-            available.offer(instance);
+        ArenaInstance pollAvailable() {
+            lock.lock();
+            try {
+                ArenaInstance instance = available.pollFirst();
+                if (instance != null) {
+                    inUse.add(instance);
+                }
+                return instance;
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        void addInstanceAndNotify(ArenaInstance instance) {
+            lock.lock();
+            try {
+                all.add(instance);
+                available.add(instance);
+            } finally {
+                lock.unlock();
+            }
         }
 
         void registerInUse(ArenaInstance instance) {
-            all.add(instance);
-            inUse.add(instance);
+            lock.lock();
+            try {
+                all.add(instance);
+                inUse.add(instance);
+            } finally {
+                lock.unlock();
+            }
         }
 
         void returnInstance(ArenaInstance instance) {
-            inUse.remove(instance);
-            resetting.remove(instance);
-            available.offer(instance);
+            lock.lock();
+            try {
+                resetting.remove(instance);
+                inUse.remove(instance);
+                all.add(instance);
+                available.addLast(instance);
+            } finally {
+                lock.unlock();
+            }
         }
 
         void markResetting(ArenaInstance instance) {
-            available.remove(instance);
-            inUse.remove(instance);
-            resetting.add(instance);
+            lock.lock();
+            try {
+                available.remove(instance);
+                if (inUse.remove(instance)) {
+                    resetting.add(instance);
+                }
+            } finally {
+                lock.unlock();
+            }
         }
 
         void markCorrupted(ArenaInstance instance) {
-            available.remove(instance);
-            inUse.remove(instance);
-            resetting.remove(instance);
-            all.remove(instance);
-        }
-
-        void removeInstance(ArenaInstance instance) {
-            all.remove(instance);
-            available.remove(instance);
-            inUse.remove(instance);
-            resetting.remove(instance);
-        }
-
-        ArenaInstance pollAvailable() {
-            ArenaInstance instance = available.poll();
-            if (instance != null) {
-                inUse.add(instance);
+            lock.lock();
+            try {
+                available.remove(instance);
+                inUse.remove(instance);
+                resetting.remove(instance);
+                all.remove(instance);
+            } finally {
+                lock.unlock();
             }
-            return instance;
-        }
-
-        int getAvailableCount() {
-            return available.size();
-        }
-
-        int getInUseCount() {
-            return inUse.size();
-        }
-
-        int getResettingCount() {
-            return resetting.size();
-        }
-
-        int getTotalCount() {
-            return all.size();
-        }
-
-        List<ArenaInstance> getAllInstances() {
-            return new ArrayList<>(all);
         }
 
         ArenaInstance removeAvailableInstance() {
-            ArenaInstance instance = available.poll();
-            if (instance == null) {
-                return null;
+            lock.lock();
+            try {
+                ArenaInstance instance = available.pollFirst();
+                if (instance != null) {
+                    all.remove(instance);
+                }
+                return instance;
+            } finally {
+                lock.unlock();
             }
-            removeInstance(instance);
-            return instance;
         }
 
-        void removeExcess(int count) {
-            int removed = 0;
-            while (removed < count && !available.isEmpty()) {
-                ArenaInstance instance = available.poll();
-                if (instance != null) {
-                    removeInstance(instance);
-                    removed++;
-                }
+        int getAvailableCount() {
+            lock.lock();
+            try {
+                return available.size();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        int getInUseCount() {
+            lock.lock();
+            try {
+                return inUse.size();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        int getResettingCount() {
+            lock.lock();
+            try {
+                return resetting.size();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        int getTotalCount() {
+            lock.lock();
+            try {
+                return all.size();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        List<ArenaInstance> getAllInstances() {
+            lock.lock();
+            try {
+                return new ArrayList<>(all);
+            } finally {
+                lock.unlock();
             }
         }
 
         void clear() {
-            available.clear();
-            inUse.clear();
-            resetting.clear();
-            all.clear();
+            lock.lock();
+            try {
+                available.clear();
+                inUse.clear();
+                resetting.clear();
+                all.clear();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        PoolCounts counts() {
+            lock.lock();
+            try {
+                return new PoolCounts(
+                    available.size(),
+                    inUse.size(),
+                    resetting.size(),
+                    all.size()
+                );
+            } finally {
+                lock.unlock();
+            }
         }
     }
+
+    private record PoolCounts(
+        int available,
+        int inUse,
+        int resetting,
+        int total
+    ) {}
 }

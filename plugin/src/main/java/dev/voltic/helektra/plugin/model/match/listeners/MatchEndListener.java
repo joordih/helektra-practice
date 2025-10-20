@@ -1,5 +1,8 @@
 package dev.voltic.helektra.plugin.model.match.listeners;
 
+import dev.voltic.helektra.api.model.arena.IArenaVisibilityService;
+import dev.voltic.helektra.plugin.model.match.MatchArenaTracker;
+import dev.voltic.helektra.plugin.model.match.SpectatorService;
 import dev.voltic.helektra.plugin.model.match.event.MatchEndedEvent;
 import dev.voltic.helektra.plugin.model.profile.LobbyService;
 import jakarta.inject.Inject;
@@ -20,16 +23,31 @@ public class MatchEndListener implements Listener {
 
     private final LobbyService lobbyService;
     private final JavaPlugin plugin;
+    private final MatchArenaTracker matchArenaTracker;
+    private final IArenaVisibilityService visibilityService;
+    private final SpectatorService spectatorService;
     private final Set<UUID> pendingTeleports = ConcurrentHashMap.newKeySet();
 
     @Inject
-    public MatchEndListener(LobbyService lobbyService, JavaPlugin plugin) {
+    public MatchEndListener(
+        LobbyService lobbyService,
+        JavaPlugin plugin,
+        MatchArenaTracker matchArenaTracker,
+        IArenaVisibilityService visibilityService,
+        SpectatorService spectatorService
+    ) {
         this.lobbyService = lobbyService;
         this.plugin = plugin;
+        this.matchArenaTracker = matchArenaTracker;
+        this.visibilityService = visibilityService;
+        this.spectatorService = spectatorService;
     }
 
     @EventHandler
     public void onMatchEnded(MatchEndedEvent event) {
+        matchArenaTracker.release(event.getMatch().getId());
+        Set<UUID> released = ConcurrentHashMap.newKeySet();
+        released.addAll(spectatorService.concludeMatch(event.getMatch()));
         event
             .getMatch()
             .getParticipants()
@@ -38,6 +56,7 @@ public class MatchEndListener implements Listener {
                 if (player != null && player.isOnline()) {
                     scheduleTeleport(player);
                 }
+                released.add(participant.getUniqueId());
             });
         event
             .getMatch()
@@ -47,7 +66,9 @@ public class MatchEndListener implements Listener {
                 if (spectator != null && spectator.isOnline()) {
                     scheduleTeleport(spectator);
                 }
+                released.add(uniqueId);
             });
+        visibilityService.releasePlayers(released);
     }
 
     private void scheduleTeleport(Player player) {

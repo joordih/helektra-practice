@@ -25,6 +25,8 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Waterlogged;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -441,22 +443,40 @@ public class WorldGateway {
     }
 
     public void clearEntities(Region region) {
-        World world = Bukkit.getWorld(region.getWorld());
-        if (world == null) return;
+        clearEntities(region, 0);
+    }
 
+    public void clearEntities(Region region, int padding) {
+        World world = Bukkit.getWorld(region.getWorld());
+        if (world == null) {
+            return;
+        }
+        int pad = Math.max(0, padding);
+        int minX = region.getMinX() - pad;
+        int maxX = region.getMaxX() + pad;
+        int minY = region.getMinY() - pad;
+        int maxY = region.getMaxY() + pad;
+        int minZ = region.getMinZ() - pad;
+        int maxZ = region.getMaxZ() + pad;
         world
             .getEntities()
             .stream()
+            .filter(entity -> !(entity instanceof Player))
             .filter(entity -> {
-                org.bukkit.Location loc = entity.getLocation();
-                return region.contains(
-                    loc.getBlockX(),
-                    loc.getBlockY(),
-                    loc.getBlockZ()
+                var loc = entity.getLocation();
+                int x = loc.getBlockX();
+                int y = loc.getBlockY();
+                int z = loc.getBlockZ();
+                return (
+                    x >= minX &&
+                    x <= maxX &&
+                    y >= minY &&
+                    y <= maxY &&
+                    z >= minZ &&
+                    z <= maxZ
                 );
             })
-            .filter(entity -> !(entity instanceof org.bukkit.entity.Player))
-            .forEach(org.bukkit.entity.Entity::remove);
+            .forEach(Entity::remove);
     }
 
     public void clearLiquids(Region region) {
@@ -528,7 +548,7 @@ public class WorldGateway {
         if (block.isLiquid()) {
             return true;
         }
-        org.bukkit.block.data.BlockData data = block.getBlockData();
+        BlockData data = block.getBlockData();
         if (data instanceof Waterlogged waterlogged) {
             return waterlogged.isWaterlogged();
         }
@@ -540,7 +560,7 @@ public class WorldGateway {
             block.setType(Material.AIR, false);
             return;
         }
-        org.bukkit.block.data.BlockData data = block.getBlockData();
+        BlockData data = block.getBlockData();
         if (
             data instanceof Waterlogged waterlogged &&
             waterlogged.isWaterlogged()

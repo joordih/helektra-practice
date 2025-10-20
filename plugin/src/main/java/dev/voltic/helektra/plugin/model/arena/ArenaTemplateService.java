@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import dev.voltic.helektra.api.model.arena.Arena;
 import dev.voltic.helektra.api.model.arena.ArenaInstance;
 import dev.voltic.helektra.api.model.arena.ArenaTemplateBundle;
+import dev.voltic.helektra.api.model.arena.ArenaVisibilitySettings;
 import dev.voltic.helektra.api.model.arena.IArenaService;
 import dev.voltic.helektra.api.model.arena.IArenaSnapshotService;
 import dev.voltic.helektra.api.model.arena.IArenaTemplateService;
@@ -19,16 +20,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
+import org.bukkit.WorldType;
+import org.bukkit.generator.ChunkGenerator;
 
 @Singleton
 public class ArenaTemplateService implements IArenaTemplateService {
-
-    private static final int REGION_PADDING = 48;
 
     private final IArenaTemplateRepository templateRepository;
     private final IArenaService arenaService;
     private final WorldGateway worldGateway;
     private final IArenaSnapshotService snapshotService;
+    private final ArenaVisibilitySettings visibilitySettings;
     private final ConcurrentHashMap<
         String,
         CompletableFuture<ArenaTemplateBundle>
@@ -45,12 +49,14 @@ public class ArenaTemplateService implements IArenaTemplateService {
         IArenaTemplateRepository templateRepository,
         IArenaService arenaService,
         WorldGateway worldGateway,
-        IArenaSnapshotService snapshotService
+        IArenaSnapshotService snapshotService,
+        ArenaVisibilitySettings visibilitySettings
     ) {
         this.templateRepository = templateRepository;
         this.arenaService = arenaService;
         this.worldGateway = worldGateway;
         this.snapshotService = snapshotService;
+        this.visibilitySettings = visibilitySettings;
     }
 
     @Override
@@ -135,7 +141,7 @@ public class ArenaTemplateService implements IArenaTemplateService {
                     }
                     return CompletableFuture.completedFuture(bundle);
                 })
-                .thenCompose(futureResult -> futureResult)
+                .thenCompose(result -> result)
                 .whenComplete((bundle, error) -> {
                     if (error != null) {
                         templateCache.remove(arena.getId());
@@ -173,9 +179,16 @@ public class ArenaTemplateService implements IArenaTemplateService {
                 )
             );
         }
+        if (visibilitySettings.isMultiworldEnabled()) {
+            return spawnInIsolatedWorld(arena, bundle, instanceId, baseRegion);
+        }
         RegionAllocator allocator = allocators.computeIfAbsent(
             arena.getId(),
-            key -> new RegionAllocator(baseRegion, REGION_PADDING)
+            key ->
+                new RegionAllocator(
+                    baseRegion,
+                    visibilitySettings.getGapBlocks()
+                )
         );
         CopyOnWriteArrayList<Region> occupied = occupiedRegions.computeIfAbsent(
             baseRegion.getWorld(),
@@ -208,6 +221,48 @@ public class ArenaTemplateService implements IArenaTemplateService {
             .thenApply(v -> instance);
     }
 
+    private CompletableFuture<ArenaInstance> spawnInIsolatedWorld(
+        Arena arena,
+        ArenaTemplateBundle bundle,
+        UUID instanceId,
+        Region baseRegion
+    ) {
+        String sourceWorld = baseRegion.getWorld();
+        String targetWorld = buildInstanceWorldName(arena.getId(), instanceId);
+        prepareIsolatedWorld(sourceWorld, targetWorld);
+        Region instanceRegion = Region.builder()
+            .world(targetWorld)
+            .minX(baseRegion.getMinX())
+            .minY(baseRegion.getMinY())
+            .minZ(baseRegion.getMinZ())
+            .maxX(baseRegion.getMaxX())
+            .maxY(baseRegion.getMaxY())
+            .maxZ(baseRegion.getMaxZ())
+            .build();
+        Location instanceSpawnA = cloneLocation(arena.getSpawnA(), targetWorld);
+        Location instanceSpawnB = cloneLocation(arena.getSpawnB(), targetWorld);
+        ArenaInstance instance = ArenaInstance.builder()
+            .instanceId(instanceId)
+            .arenaId(arena.getId())
+            .state(ArenaInstance.ArenaInstanceState.AVAILABLE)
+            .instanceRegion(instanceRegion)
+            .instanceSpawnA(instanceSpawnA)
+            .instanceSpawnB(instanceSpawnB)
+            .createdAt(Instant.now())
+            .usageCount(0)
+            .totalBlocksModified(0)
+            .build();
+        return worldGateway
+            .pasteRegion(instanceRegion, bundle.getData())
+            .thenApply(v -> instance);
+    }
+
+    private String buildInstanceWorldName(String arenaId, UUID instanceId) {
+        return (
+            "arena_" + arenaId + "_" + instanceId.toString().replace("-", "")
+        );
+    }
+
     private Location offsetLocation(
         Location original,
         Region instanceRegion,
@@ -228,14 +283,63 @@ public class ArenaTemplateService implements IArenaTemplateService {
             .build();
     }
 
-    private static boolean intersects(Region a, Region b) {
+    private Location cloneLocation(Location original, String worldName) {
+        if (original == null) {
+            return null;
+        }
+        return Location.builder()
+            .world(worldName)
+            .x(original.getX())
+            .y(original.getY())
+            .z(original.getZ())
+            .yaw(original.getYaw())
+            .pitch(original.getPitch())
+            .build();
+    }
+
+    private void prepareIsolatedWorld(
+        String sourceWorldName,
+        String targetWorldName
+    ) {
+        if (targetWorldName == null || targetWorldName.isEmpty()) {
+            throw new IllegalArgumentException("Target world name is required");
+        }
+        World existing = Bukkit.getWorld(targetWorldName);
+        if (existing != null) {
+            return;
+        }
+        World source = Bukkit.getWorld(sourceWorldName);
+        if (source == null) {
+            throw new IllegalArgumentException(
+                "Source world not found: " + sourceWorldName
+            );
+        }
+        WorldCreator creator = new WorldCreator(targetWorldName);
+        creator.environment(source.getEnvironment());
+        WorldType type = source.getWorldType();
+        if (type != null) {
+            creator.type(type);
+        }
+        creator.seed(source.getSeed());
+        ChunkGenerator generator = source.getGenerator();
+        if (generator != null) {
+            creator.generator(generator);
+        }
+        World created = creator.createWorld();
+        if (created != null) {
+            created.setAutoSave(false);
+        }
+    }
+
+    private static boolean intersects(Region a, Region b, int gap) {
+        int expanded = Math.max(0, gap);
         return (
-            a.getMaxX() >= b.getMinX() &&
-            a.getMinX() <= b.getMaxX() &&
-            a.getMaxY() >= b.getMinY() &&
-            a.getMinY() <= b.getMaxY() &&
-            a.getMaxZ() >= b.getMinZ() &&
-            a.getMinZ() <= b.getMaxZ()
+            a.getMaxX() + expanded >= b.getMinX() &&
+            a.getMinX() - expanded <= b.getMaxX() &&
+            a.getMaxY() + expanded >= b.getMinY() &&
+            a.getMinY() - expanded <= b.getMaxY() &&
+            a.getMaxZ() + expanded >= b.getMinZ() &&
+            a.getMinZ() - expanded <= b.getMaxZ()
         );
     }
 
@@ -244,16 +348,18 @@ public class ArenaTemplateService implements IArenaTemplateService {
         private final Region base;
         private final int strideX;
         private final int strideZ;
+        private final int gap;
         private final ConcurrentHashMap<UUID, Region> assignments =
             new ConcurrentHashMap<>();
         private final AtomicLong sequence = new AtomicLong();
 
-        RegionAllocator(Region base, int padding) {
+        RegionAllocator(Region base, int gap) {
             this.base = base;
+            this.gap = Math.max(0, gap);
             int width = base.getMaxX() - base.getMinX() + 1;
             int depth = base.getMaxZ() - base.getMinZ() + 1;
-            this.strideX = Math.max(1, width + padding);
-            this.strideZ = Math.max(1, depth + padding);
+            this.strideX = Math.max(1, width + this.gap);
+            this.strideZ = Math.max(1, depth + this.gap);
         }
 
         Region allocate(
@@ -268,7 +374,7 @@ public class ArenaTemplateService implements IArenaTemplateService {
                     boolean overlaps = false;
                     synchronized (occupied) {
                         for (Region existing : occupied) {
-                            if (intersects(existing, candidate)) {
+                            if (intersects(existing, candidate, gap)) {
                                 overlaps = true;
                                 break;
                             }
@@ -300,22 +406,34 @@ public class ArenaTemplateService implements IArenaTemplateService {
             if (index == 0) {
                 return new GridPoint(0, 0);
             }
-            long k = (long) Math.ceil((Math.sqrt(index) - 1) / 2);
-            long t = 2 * k + 1;
-            long m = t * t;
-            long tMinus = t - 1;
-            if (index >= m - tMinus) {
-                return new GridPoint((int) (k - (m - index)), (int) -k);
+            long layer = (long) Math.ceil((Math.sqrt(index) - 1) / 2);
+            long legLength = 2 * layer + 1;
+            long max = legLength * legLength;
+            long leg = legLength - 1;
+            if (index >= max - leg) {
+                return new GridPoint(
+                    (int) (layer - (max - index)),
+                    (int) -layer
+                );
             }
-            m -= tMinus;
-            if (index >= m - tMinus) {
-                return new GridPoint((int) -k, (int) (-k + (m - index)));
+            max -= leg;
+            if (index >= max - leg) {
+                return new GridPoint(
+                    (int) -layer,
+                    (int) (-layer + (max - index))
+                );
             }
-            m -= tMinus;
-            if (index >= m - tMinus) {
-                return new GridPoint((int) (-k + (m - index)), (int) k);
+            max -= leg;
+            if (index >= max - leg) {
+                return new GridPoint(
+                    (int) (-layer + (max - index)),
+                    (int) layer
+                );
             }
-            return new GridPoint((int) k, (int) (k - (m - index - tMinus)));
+            return new GridPoint(
+                (int) layer,
+                (int) (layer - (max - index - leg))
+            );
         }
     }
 
