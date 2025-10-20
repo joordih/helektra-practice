@@ -11,21 +11,33 @@ import org.bukkit.event.Listener;
 @Singleton
 public class QueueMatchListener implements Listener {
 
-  private final IQueueService queueService;
-  private final IMatchService matchService;
+    private final IQueueService queueService;
+    private final IMatchService matchService;
 
-  @Inject
-  public QueueMatchListener(
-    IQueueService queueService,
-    IMatchService matchService
-  ) {
-    this.queueService = queueService;
-    this.matchService = matchService;
-  }
+    @Inject
+    public QueueMatchListener(
+        IQueueService queueService,
+        IMatchService matchService
+    ) {
+        this.queueService = queueService;
+        this.matchService = matchService;
+    }
 
-  @EventHandler
-  public void onMatchEnded(MatchEndedEvent event) {
-    queueService.completeMatch(event.getMatch().getMatchId());
-    matchService.removeMatch(event.getMatch().getMatchId());
-  }
+    @EventHandler
+    public void onMatchEnded(MatchEndedEvent event) {
+        String matchId = event.getMatch().getMatchId();
+        queueService
+            .completeMatch(matchId)
+            .whenComplete((ignored, error) -> {
+                if (error != null) {
+                    String message = error.getMessage() != null
+                        ? error.getMessage()
+                        : error.toString();
+                    org.bukkit.Bukkit.getLogger().severe(
+                        "Failed to complete match " + matchId + ": " + message
+                    );
+                }
+                matchService.removeMatch(matchId);
+            });
+    }
 }

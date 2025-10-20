@@ -14,49 +14,48 @@ import org.bukkit.Bukkit;
 @Singleton
 public class MatchArenaTracker {
 
-  private final Map<String, ArenaInstance> assignments =
-    new ConcurrentHashMap<>();
-  private final IArenaService arenaService;
+    private final Map<String, ArenaInstance> assignments =
+        new ConcurrentHashMap<>();
+    private final IArenaService arenaService;
 
-  @Inject
-  public MatchArenaTracker(IArenaService arenaService) {
-    this.arenaService = arenaService;
-  }
-
-  public void register(String matchId, ArenaInstance instance) {
-    if (matchId == null || instance == null) {
-      return;
+    @Inject
+    public MatchArenaTracker(IArenaService arenaService) {
+        this.arenaService = arenaService;
     }
-    assignments.put(matchId, instance);
-  }
 
-  public CompletableFuture<Void> release(String matchId) {
-    ArenaInstance instance = assignments.remove(matchId);
-    if (instance == null) {
-      return CompletableFuture.completedFuture(null);
-    }
-    return arenaService
-      .releaseArena(instance)
-      .whenComplete((ignored, error) -> {
-        if (error == null) {
-          return;
+    public void register(String matchId, ArenaInstance instance) {
+        if (matchId == null || instance == null) {
+            return;
         }
-        Throwable cause = error instanceof CompletionException
-          ? error.getCause()
-          : error;
-        String message = cause != null && cause.getMessage() != null
-          ? cause.getMessage()
-          : String.valueOf(cause);
-        Bukkit.getLogger().severe(
-          TranslationUtils.translate(
-            "match.arena-reset-failed",
-            "match",
-            matchId,
-            "error",
-            message
-          )
-        );
         assignments.put(matchId, instance);
-      });
-  }
+    }
+
+    public CompletableFuture<Void> release(String matchId) {
+        ArenaInstance instance = assignments.remove(matchId);
+        if (instance == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return arenaService
+            .releaseArena(instance)
+            .whenComplete((ignored, error) -> {
+                if (error == null) {
+                    return;
+                }
+                Throwable cause = error instanceof CompletionException
+                    ? error.getCause()
+                    : error;
+                String message = cause != null && cause.getMessage() != null
+                    ? cause.getMessage()
+                    : String.valueOf(cause);
+                Bukkit.getLogger().severe(
+                    TranslationUtils.translate(
+                        "match.arena-reset-failed",
+                        "match",
+                        matchId,
+                        "error",
+                        message
+                    )
+                );
+            });
+    }
 }

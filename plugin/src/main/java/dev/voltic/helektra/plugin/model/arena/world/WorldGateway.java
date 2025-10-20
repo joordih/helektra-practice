@@ -1,30 +1,32 @@
 package dev.voltic.helektra.plugin.model.arena.world;
 
+import com.google.inject.Inject;
+import dev.voltic.helektra.api.model.arena.Region;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Waterlogged;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
-
-import com.google.inject.Inject;
-
-import dev.voltic.helektra.api.model.arena.Region;
 
 public class WorldGateway {
 
@@ -40,19 +42,24 @@ public class WorldGateway {
 
     public byte[] captureRegion(Region region) {
         if (!Bukkit.isPrimaryThread()) {
-            throw new IllegalStateException("captureRegion must be called on the main thread");
+            throw new IllegalStateException(
+                "captureRegion must be called on the main thread"
+            );
         }
 
         World world = Bukkit.getWorld(region.getWorld());
         if (world == null) {
-            throw new IllegalArgumentException("World not found: " + region.getWorld());
+            throw new IllegalArgumentException(
+                "World not found: " + region.getWorld()
+            );
         }
 
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
 
-        try (GZIPOutputStream gzipOut = new GZIPOutputStream(byteOut);
-             DataOutputStream dataOut = new DataOutputStream(gzipOut)) {
-
+        try (
+            GZIPOutputStream gzipOut = new GZIPOutputStream(byteOut);
+            DataOutputStream dataOut = new DataOutputStream(gzipOut)
+        ) {
             for (int x = region.getMinX(); x <= region.getMaxX(); x++) {
                 for (int y = region.getMinY(); y <= region.getMaxY(); y++) {
                     for (int z = region.getMinZ(); z <= region.getMaxZ(); z++) {
@@ -71,10 +78,17 @@ public class WorldGateway {
         return byteOut.toByteArray();
     }
 
-    public CompletableFuture<Void> pasteRegion(Region region, byte[] templateData) {
+    public CompletableFuture<Void> pasteRegion(
+        Region region,
+        byte[] templateData
+    ) {
         World world = Bukkit.getWorld(region.getWorld());
         if (world == null) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("World not found: " + region.getWorld()));
+            return CompletableFuture.failedFuture(
+                new IllegalArgumentException(
+                    "World not found: " + region.getWorld()
+                )
+            );
         }
 
         PasteSession session = new PasteSession(world, region, templateData);
@@ -82,10 +96,17 @@ public class WorldGateway {
         return session.getCompletionFuture();
     }
 
-    public CompletableFuture<Void> applySectionData(String worldName, Region region, byte[] sectionData) {
+    public CompletableFuture<Void> applySectionData(
+        String worldName,
+        Region region,
+        byte[] sectionData
+    ) {
         Region targetRegion = region;
 
-        if (worldName != null && (region.getWorld() == null || !worldName.equals(region.getWorld()))) {
+        if (
+            worldName != null &&
+            (region.getWorld() == null || !worldName.equals(region.getWorld()))
+        ) {
             targetRegion = Region.builder()
                 .world(worldName)
                 .minX(region.getMinX())
@@ -100,11 +121,14 @@ public class WorldGateway {
         return pasteRegion(targetRegion, sectionData);
     }
 
+    @SuppressWarnings("unused")
     private final class PasteSession implements Runnable {
+
         private final World world;
         private final Region region;
         private final byte[] templateData;
-        private final CompletableFuture<Void> completion = new CompletableFuture<>();
+        private final CompletableFuture<Void> completion =
+            new CompletableFuture<>();
         private final Iterator<int[]> chunkIterator;
 
         private DataInputStream dataInput;
@@ -130,9 +154,17 @@ public class WorldGateway {
             this.templateData = templateData;
 
             List<int[]> chunks = new ArrayList<>();
-            for (int chunkX = region.getChunkMinX(); chunkX <= region.getChunkMaxX(); chunkX++) {
-                for (int chunkZ = region.getChunkMinZ(); chunkZ <= region.getChunkMaxZ(); chunkZ++) {
-                    chunks.add(new int[] {chunkX, chunkZ});
+            for (
+                int chunkX = region.getChunkMinX();
+                chunkX <= region.getChunkMaxX();
+                chunkX++
+            ) {
+                for (
+                    int chunkZ = region.getChunkMinZ();
+                    chunkZ <= region.getChunkMaxZ();
+                    chunkZ++
+                ) {
+                    chunks.add(new int[] { chunkX, chunkZ });
                 }
             }
             this.chunkIterator = chunks.iterator();
@@ -159,7 +191,12 @@ public class WorldGateway {
                 if (completion.isDone()) {
                     return;
                 }
-                this.task = Bukkit.getScheduler().runTaskTimer(plugin, this, 1L, 1L);
+                this.task = Bukkit.getScheduler().runTaskTimer(
+                    plugin,
+                    this,
+                    1L,
+                    1L
+                );
             });
         }
 
@@ -184,7 +221,9 @@ public class WorldGateway {
         private void loadChunksTick() {
             int loadedThisTick = 0;
 
-            while (chunkIterator.hasNext() && loadedThisTick < CHUNKS_PER_TICK) {
+            while (
+                chunkIterator.hasNext() && loadedThisTick < CHUNKS_PER_TICK
+            ) {
                 int[] coords = chunkIterator.next();
                 world.getChunkAt(coords[0], coords[1]);
                 loadedThisTick++;
@@ -193,9 +232,16 @@ public class WorldGateway {
             if (!chunkIterator.hasNext()) {
                 chunksLoaded = true;
                 try {
-                    this.dataInput = new DataInputStream(new GZIPInputStream(new ByteArrayInputStream(templateData)));
+                    this.dataInput = new DataInputStream(
+                        new GZIPInputStream(
+                            new ByteArrayInputStream(templateData)
+                        )
+                    );
                 } catch (IOException e) {
-                    throw new RuntimeException("Failed to decode template data", e);
+                    throw new RuntimeException(
+                        "Failed to decode template data",
+                        e
+                    );
                 }
             }
         }
@@ -208,7 +254,10 @@ public class WorldGateway {
 
             int processedThisTick = 0;
 
-            while (processedBlocks < totalBlocks && processedThisTick < BLOCKS_PER_TICK) {
+            while (
+                processedBlocks < totalBlocks &&
+                processedThisTick < BLOCKS_PER_TICK
+            ) {
                 String materialName;
                 String blockDataString;
 
@@ -295,7 +344,13 @@ public class WorldGateway {
         }
     }
 
-    public void revertBlock(String worldName, int x, int y, int z, String blockDataString) {
+    public void revertBlock(
+        String worldName,
+        int x,
+        int y,
+        int z,
+        String blockDataString
+    ) {
         World world = Bukkit.getWorld(worldName);
         if (world == null) return;
 
@@ -326,7 +381,11 @@ public class WorldGateway {
         } catch (Exception e) {
             for (int x = 0; x < 16; x++) {
                 for (int z = 0; z < 16; z++) {
-                    for (int y = world.getMinHeight(); y < world.getMaxHeight(); y++) {
+                    for (
+                        int y = world.getMinHeight();
+                        y < world.getMaxHeight();
+                        y++
+                    ) {
                         Block block = chunk.getBlock(x, y, z);
                         block.setType(Material.AIR, false);
                     }
@@ -343,7 +402,13 @@ public class WorldGateway {
         return block.getBlockData().getAsString();
     }
 
-    public void setBlock(String worldName, int x, int y, int z, String blockDataString) {
+    public void setBlock(
+        String worldName,
+        int x,
+        int y,
+        int z,
+        String blockDataString
+    ) {
         World world = Bukkit.getWorld(worldName);
         if (world == null) return;
 
@@ -379,12 +444,116 @@ public class WorldGateway {
         World world = Bukkit.getWorld(region.getWorld());
         if (world == null) return;
 
-        world.getEntities().stream()
+        world
+            .getEntities()
+            .stream()
             .filter(entity -> {
                 org.bukkit.Location loc = entity.getLocation();
-                return region.contains(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+                return region.contains(
+                    loc.getBlockX(),
+                    loc.getBlockY(),
+                    loc.getBlockZ()
+                );
             })
             .filter(entity -> !(entity instanceof org.bukkit.entity.Player))
             .forEach(org.bukkit.entity.Entity::remove);
+    }
+
+    public void clearLiquids(Region region) {
+        World world = Bukkit.getWorld(region.getWorld());
+        if (world == null) {
+            return;
+        }
+        int padding = 2;
+        int minX = region.getMinX() - padding;
+        int maxX = region.getMaxX() + padding;
+        int minZ = region.getMinZ() - padding;
+        int maxZ = region.getMaxZ() + padding;
+        int minY = Math.max(world.getMinHeight(), region.getMinY() - padding);
+        int maxY = Math.min(
+            world.getMaxHeight() - 1,
+            region.getMaxY() + padding
+        );
+        Deque<Block> queue = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                for (int y = minY; y <= maxY; y++) {
+                    Block block = world.getBlockAt(x, y, z);
+                    if (isLiquidBlock(block)) {
+                        long key = coordinateKey(x, y, z);
+                        if (visited.add(key)) {
+                            queue.add(block);
+                        }
+                    }
+                }
+            }
+        }
+        int[] dx = { 1, -1, 0, 0, 0, 0 };
+        int[] dy = { 0, 0, 1, -1, 0, 0 };
+        int[] dz = { 0, 0, 0, 0, 1, -1 };
+        while (!queue.isEmpty()) {
+            Block current = queue.poll();
+            int cx = current.getX();
+            int cy = current.getY();
+            int cz = current.getZ();
+            clearLiquidBlock(current);
+            for (int i = 0; i < dx.length; i++) {
+                int nx = cx + dx[i];
+                int ny = cy + dy[i];
+                int nz = cz + dz[i];
+                if (nx < minX || nx > maxX || nz < minZ || nz > maxZ) {
+                    continue;
+                }
+                if (ny < world.getMinHeight() || ny >= world.getMaxHeight()) {
+                    continue;
+                }
+                long key = coordinateKey(nx, ny, nz);
+                if (visited.contains(key)) {
+                    continue;
+                }
+                Block neighbour = world.getBlockAt(nx, ny, nz);
+                if (isLiquidBlock(neighbour)) {
+                    visited.add(key);
+                    queue.add(neighbour);
+                }
+            }
+        }
+    }
+
+    private boolean isLiquidBlock(Block block) {
+        if (block == null) {
+            return false;
+        }
+        if (block.isLiquid()) {
+            return true;
+        }
+        org.bukkit.block.data.BlockData data = block.getBlockData();
+        if (data instanceof Waterlogged waterlogged) {
+            return waterlogged.isWaterlogged();
+        }
+        return false;
+    }
+
+    private void clearLiquidBlock(Block block) {
+        if (block.isLiquid()) {
+            block.setType(Material.AIR, false);
+            return;
+        }
+        org.bukkit.block.data.BlockData data = block.getBlockData();
+        if (
+            data instanceof Waterlogged waterlogged &&
+            waterlogged.isWaterlogged()
+        ) {
+            waterlogged.setWaterlogged(false);
+            block.setBlockData(data, false);
+        }
+    }
+
+    private long coordinateKey(int x, int y, int z) {
+        long key = ((long) (x & 0x3FFFFFF)) << 38;
+        key |= ((long) (z & 0x3FFFFFF)) << 12;
+        key |= (long) (y & 0xFFFL);
+        return key;
     }
 }

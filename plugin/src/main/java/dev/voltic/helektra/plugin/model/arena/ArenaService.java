@@ -34,427 +34,455 @@ import org.bukkit.configuration.InvalidConfigurationException;
 @Singleton
 public class ArenaService implements IArenaService {
 
-  private final Map<String, Arena> arenas = new ConcurrentHashMap<>();
-  private final IArenaRepository repository;
-  private final IArenaPoolService poolService;
-  private final IMetricsService metricsService;
-  private final Map<String, List<String>> pendingPreloads =
-    new ConcurrentHashMap<>();
+    private final Map<String, Arena> arenas = new ConcurrentHashMap<>();
+    private final IArenaRepository repository;
+    private final IArenaPoolService poolService;
+    private final IMetricsService metricsService;
+    private final Map<String, List<String>> pendingPreloads =
+        new ConcurrentHashMap<>();
 
-  @Getter
-  private final FileConfig arenasConfig;
+    @Getter
+    private final FileConfig arenasConfig;
 
-  @Inject
-  public ArenaService(
-    IArenaRepository repository,
-    IArenaPoolService poolService,
-    IMetricsService metricsService,
-    FileConfig arenasConfig
-  ) {
-    this.repository = repository;
-    this.poolService = poolService;
-    this.metricsService = metricsService;
-    this.arenasConfig = arenasConfig;
-  }
-
-  @Override
-  public Optional<Arena> getArena(String id) {
-    return Optional.ofNullable(arenas.get(id));
-  }
-
-  @Override
-  public List<Arena> getAllArenas() {
-    return new ArrayList<>(arenas.values());
-  }
-
-  @Override
-  public List<Arena> getArenasByType(ArenaType type) {
-    return arenas
-      .values()
-      .stream()
-      .filter(a -> a.getType() == type)
-      .collect(Collectors.toList());
-  }
-
-  @Override
-  public List<Arena> getArenasByKit(String kitName) {
-    return arenas
-      .values()
-      .stream()
-      .filter(Arena::isEnabled)
-      .filter(a -> a.isCompatibleWithKit(kitName))
-      .collect(Collectors.toList());
-  }
-
-  @Override
-  public List<Arena> getEnabledArenas() {
-    return arenas
-      .values()
-      .stream()
-      .filter(Arena::isEnabled)
-      .collect(Collectors.toList());
-  }
-
-  @Override
-  public void saveArena(Arena arena) {
-    arenas.put(arena.getId(), arena);
-    repository.save(arena);
-    saveToConfig(arena);
-  }
-
-  @Override
-  public void deleteArena(String id) {
-    arenas.remove(id);
-    repository.delete(id);
-    poolService.clearPool(id);
-    deleteFromConfig(id);
-  }
-
-  @Override
-  public void loadAll() {
-    arenas.clear();
-    loadFromConfig();
-    repository.findAll().forEach(arena -> arenas.put(arena.getId(), arena));
-    pendingPreloads.clear();
-    List<CompletableFuture<Void>> preloadTasks = new ArrayList<>();
-    arenas.values().forEach(arena -> handleArenaPreload(arena, preloadTasks));
-    if (!preloadTasks.isEmpty()) {
-      CompletableFuture.allOf(
-        preloadTasks.toArray(new CompletableFuture[0])
-      ).join();
-    }
-  }
-
-  @Override
-  public void saveAll() {
-    arenas.values().forEach(this::saveArena);
-  }
-
-  @Override
-  public void reloadArenas() {
-    try {
-      arenasConfig.getConfig().load(arenasConfig.getFile());
-      loadAll();
-    } catch (IOException | InvalidConfigurationException e) {
-      e.printStackTrace();
-    }
-  }
-
-  @Override
-  public CompletableFuture<ArenaInstance> assignArena(String arenaId) {
-    return poolService.acquire(arenaId);
-  }
-
-  @Override
-  public CompletableFuture<Void> releaseArena(ArenaInstance instance) {
-    return poolService.release(instance);
-  }
-
-  @Override
-  public ArenaMetrics getMetrics(String arenaId) {
-    return metricsService.getMetrics(arenaId);
-  }
-
-  private void loadFromConfig() {
-    ConfigurationSection arenasSection = arenasConfig
-      .getConfig()
-      .getConfigurationSection("arenas");
-    if (arenasSection == null) return;
-
-    for (String id : arenasSection.getKeys(false)) {
-      ConfigurationSection arenaSection = arenasSection.getConfigurationSection(
-        id
-      );
-      if (arenaSection == null) continue;
-
-      Arena arena = parseArena(id, arenaSection);
-      arenas.put(id, arena);
-    }
-  }
-
-  private Arena parseArena(String id, ConfigurationSection section) {
-    Region region = parseRegion(section.getConfigurationSection("region"));
-    Location spawnA = parseLocation(section.getConfigurationSection("spawnA"));
-    Location spawnB = parseLocation(section.getConfigurationSection("spawnB"));
-    ArenaFlags flags = parseFlags(section.getConfigurationSection("flags"));
-    PoolConfig poolConfig = parsePoolConfig(
-      section.getConfigurationSection("pool")
-    );
-    ResetConfig resetConfig = parseResetConfig(
-      section.getConfigurationSection("reset")
-    );
-
-    List<String> compatibleKits = section.contains("compatibleKits")
-      ? section.getStringList("compatibleKits")
-      : new ArrayList<>();
-
-    return Arena.builder()
-      .id(id)
-      .name(section.getString("name", id))
-      .displayName(section.getString("displayName", id))
-      .type(
-        ArenaType.valueOf(section.getString("type", "CUSTOM").toUpperCase())
-      )
-      .enabled(section.getBoolean("enabled", true))
-      .compatibleKits(compatibleKits)
-      .deathY(section.getInt("deathY", 0))
-      .buildLimitHeight(section.getInt("buildLimitHeight", 256))
-      .region(region)
-      .spawnA(spawnA)
-      .spawnB(spawnB)
-      .flags(flags)
-      .poolConfig(poolConfig)
-      .resetConfig(resetConfig)
-      .build();
-  }
-
-  private Region parseRegion(ConfigurationSection section) {
-    if (section == null) return null;
-    return Region.builder()
-      .world(section.getString("world"))
-      .minX(section.getInt("minX"))
-      .minY(section.getInt("minY"))
-      .minZ(section.getInt("minZ"))
-      .maxX(section.getInt("maxX"))
-      .maxY(section.getInt("maxY"))
-      .maxZ(section.getInt("maxZ"))
-      .build();
-  }
-
-  private Location parseLocation(ConfigurationSection section) {
-    if (section == null) return null;
-    return Location.builder()
-      .world(section.getString("world"))
-      .x(section.getDouble("x"))
-      .y(section.getDouble("y"))
-      .z(section.getDouble("z"))
-      .yaw((float) section.getDouble("yaw", 0))
-      .pitch((float) section.getDouble("pitch", 0))
-      .build();
-  }
-
-  private ArenaFlags parseFlags(ConfigurationSection section) {
-    if (section == null) return new ArenaFlags();
-    return ArenaFlags.builder()
-      .allowPlace(section.getBoolean("allowPlace", false))
-      .allowBreak(section.getBoolean("allowBreak", false))
-      .allowLiquids(section.getBoolean("allowLiquids", false))
-      .allowProjectiles(section.getBoolean("allowProjectiles", true))
-      .allowPvP(section.getBoolean("allowPvP", true))
-      .allowHunger(section.getBoolean("allowHunger", true))
-      .allowItemDrop(section.getBoolean("allowItemDrop", false))
-      .allowItemPickup(section.getBoolean("allowItemPickup", false))
-      .build();
-  }
-
-  private PoolConfig parsePoolConfig(ConfigurationSection section) {
-    if (section == null) return new PoolConfig();
-    return PoolConfig.builder()
-      .preloaded(section.getInt("preloaded", 8))
-      .minIdle(section.getInt("minIdle", 4))
-      .maxActive(section.getInt("maxActive", 32))
-      .autoScale(section.getBoolean("autoScale", true))
-      .build();
-  }
-
-  private ResetConfig parseResetConfig(ConfigurationSection section) {
-    if (section == null) return new ResetConfig();
-    String strategyStr = section.getString("strategy", "HYBRID");
-    ResetStrategy strategy;
-    try {
-      strategy = ResetStrategy.valueOf(strategyStr.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      strategy = ResetStrategy.HYBRID;
+    @Inject
+    public ArenaService(
+        IArenaRepository repository,
+        IArenaPoolService poolService,
+        IMetricsService metricsService,
+        FileConfig arenasConfig
+    ) {
+        this.repository = repository;
+        this.poolService = poolService;
+        this.metricsService = metricsService;
+        this.arenasConfig = arenasConfig;
     }
 
-    return ResetConfig.builder()
-      .strategy(strategy)
-      .thresholdT1(section.getDouble("thresholdT1", 0.18))
-      .thresholdT2(section.getDouble("thresholdT2", 0.55))
-      .perTickBudget(section.getInt("perTickBudget", 10000))
-      .async(section.getBoolean("async", true))
-      .backoffTpsThreshold(section.getInt("backoffTpsThreshold", 195))
-      .build();
-  }
-
-  private void saveToConfig(Arena arena) {
-    String path = "arenas." + arena.getId();
-    arenasConfig.getConfig().set(path + ".name", arena.getName());
-    arenasConfig.getConfig().set(path + ".displayName", arena.getDisplayName());
-    arenasConfig.getConfig().set(path + ".type", arena.getType().name());
-    arenasConfig.getConfig().set(path + ".enabled", arena.isEnabled());
-    arenasConfig
-      .getConfig()
-      .set(path + ".compatibleKits", arena.getCompatibleKits());
-    arenasConfig.getConfig().set(path + ".deathY", arena.getDeathY());
-    arenasConfig
-      .getConfig()
-      .set(path + ".buildLimitHeight", arena.getBuildLimitHeight());
-
-    if (arena.getRegion() != null) {
-      saveRegion(path + ".region", arena.getRegion());
-    }
-    if (arena.getSpawnA() != null) {
-      saveLocation(path + ".spawnA", arena.getSpawnA());
-    }
-    if (arena.getSpawnB() != null) {
-      saveLocation(path + ".spawnB", arena.getSpawnB());
-    }
-    if (arena.getFlags() != null) {
-      saveFlags(path + ".flags", arena.getFlags());
-    }
-    if (arena.getPoolConfig() != null) {
-      savePoolConfig(path + ".pool", arena.getPoolConfig());
-    }
-    if (arena.getResetConfig() != null) {
-      saveResetConfig(path + ".reset", arena.getResetConfig());
+    @Override
+    public Optional<Arena> getArena(String id) {
+        return Optional.ofNullable(arenas.get(id));
     }
 
-    arenasConfig.save();
-  }
+    @Override
+    public List<Arena> getAllArenas() {
+        return new ArrayList<>(arenas.values());
+    }
 
-  private void saveRegion(String path, Region region) {
-    arenasConfig.getConfig().set(path + ".world", region.getWorld());
-    arenasConfig.getConfig().set(path + ".minX", region.getMinX());
-    arenasConfig.getConfig().set(path + ".minY", region.getMinY());
-    arenasConfig.getConfig().set(path + ".minZ", region.getMinZ());
-    arenasConfig.getConfig().set(path + ".maxX", region.getMaxX());
-    arenasConfig.getConfig().set(path + ".maxY", region.getMaxY());
-    arenasConfig.getConfig().set(path + ".maxZ", region.getMaxZ());
-  }
+    @Override
+    public List<Arena> getArenasByType(ArenaType type) {
+        return arenas
+            .values()
+            .stream()
+            .filter(a -> a.getType() == type)
+            .collect(Collectors.toList());
+    }
 
-  private void saveLocation(String path, Location location) {
-    arenasConfig.getConfig().set(path + ".world", location.getWorld());
-    arenasConfig.getConfig().set(path + ".x", location.getX());
-    arenasConfig.getConfig().set(path + ".y", location.getY());
-    arenasConfig.getConfig().set(path + ".z", location.getZ());
-    arenasConfig.getConfig().set(path + ".yaw", location.getYaw());
-    arenasConfig.getConfig().set(path + ".pitch", location.getPitch());
-  }
+    @Override
+    public List<Arena> getArenasByKit(String kitName) {
+        return arenas
+            .values()
+            .stream()
+            .filter(Arena::isEnabled)
+            .filter(a -> a.isCompatibleWithKit(kitName))
+            .collect(Collectors.toList());
+    }
 
-  private void saveFlags(String path, ArenaFlags flags) {
-    arenasConfig.getConfig().set(path + ".allowPlace", flags.isAllowPlace());
-    arenasConfig.getConfig().set(path + ".allowBreak", flags.isAllowBreak());
-    arenasConfig
-      .getConfig()
-      .set(path + ".allowLiquids", flags.isAllowLiquids());
-    arenasConfig
-      .getConfig()
-      .set(path + ".allowProjectiles", flags.isAllowProjectiles());
-    arenasConfig.getConfig().set(path + ".allowPvP", flags.isAllowPvP());
-    arenasConfig.getConfig().set(path + ".allowHunger", flags.isAllowHunger());
-    arenasConfig
-      .getConfig()
-      .set(path + ".allowItemDrop", flags.isAllowItemDrop());
-    arenasConfig
-      .getConfig()
-      .set(path + ".allowItemPickup", flags.isAllowItemPickup());
-  }
+    @Override
+    public List<Arena> getEnabledArenas() {
+        return arenas
+            .values()
+            .stream()
+            .filter(Arena::isEnabled)
+            .collect(Collectors.toList());
+    }
 
-  private void savePoolConfig(String path, PoolConfig config) {
-    arenasConfig.getConfig().set(path + ".preloaded", config.getPreloaded());
-    arenasConfig.getConfig().set(path + ".minIdle", config.getMinIdle());
-    arenasConfig.getConfig().set(path + ".maxActive", config.getMaxActive());
-    arenasConfig.getConfig().set(path + ".autoScale", config.isAutoScale());
-  }
+    @Override
+    public void saveArena(Arena arena) {
+        arenas.put(arena.getId(), arena);
+        repository.save(arena);
+        saveToConfig(arena);
+    }
 
-  private void saveResetConfig(String path, ResetConfig config) {
-    arenasConfig
-      .getConfig()
-      .set(path + ".strategy", config.getStrategy().name());
-    arenasConfig
-      .getConfig()
-      .set(path + ".thresholdT1", config.getThresholdT1());
-    arenasConfig
-      .getConfig()
-      .set(path + ".thresholdT2", config.getThresholdT2());
-    arenasConfig
-      .getConfig()
-      .set(path + ".perTickBudget", config.getPerTickBudget());
-    arenasConfig.getConfig().set(path + ".async", config.isAsync());
-    arenasConfig
-      .getConfig()
-      .set(path + ".backoffTpsThreshold", config.getBackoffTpsThreshold());
-  }
+    @Override
+    public void deleteArena(String id) {
+        arenas.remove(id);
+        repository.delete(id);
+        poolService.clearPool(id);
+        deleteFromConfig(id);
+    }
 
-  private void deleteFromConfig(String id) {
-    arenasConfig.getConfig().set("arenas." + id, null);
-    arenasConfig.save();
-  }
+    @Override
+    public void loadAll() {
+        arenas.clear();
+        loadFromConfig();
+        repository.findAll().forEach(arena -> arenas.put(arena.getId(), arena));
+        pendingPreloads.clear();
+        List<CompletableFuture<Void>> preloadTasks = new ArrayList<>();
+        arenas
+            .values()
+            .forEach(arena -> handleArenaPreload(arena, preloadTasks));
+        if (!preloadTasks.isEmpty()) {
+            CompletableFuture.allOf(
+                preloadTasks.toArray(new CompletableFuture[0])
+            ).whenComplete((ignored, error) -> {
+                if (error != null) {
+                    Bukkit.getLogger().severe(
+                        "Failed to prewarm arena pools: " + error.getMessage()
+                    );
+                }
+            });
+        }
+    }
 
-  private void handleArenaPreload(
-    Arena arena,
-    List<CompletableFuture<Void>> tasks
-  ) {
-    Optional<String> resolvedWorld = resolveWorldName(arena);
-    if (resolvedWorld.isPresent()) {
-      String worldName = resolvedWorld.get();
-      World world = Bukkit.getWorld(worldName);
-      if (world == null) {
-        pendingPreloads
-          .computeIfAbsent(worldName, key -> new ArrayList<>())
-          .add(arena.getId());
-        Bukkit.getLogger().warning(
-          "Deferring arena pool preload for " +
-            arena.getId() +
-            " until world " +
-            worldName +
-            " is loaded."
+    @Override
+    public void saveAll() {
+        arenas.values().forEach(this::saveArena);
+    }
+
+    @Override
+    public void reloadArenas() {
+        try {
+            arenasConfig.getConfig().load(arenasConfig.getFile());
+            loadAll();
+        } catch (IOException | InvalidConfigurationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public CompletableFuture<ArenaInstance> assignArena(String arenaId) {
+        return poolService.acquire(arenaId);
+    }
+
+    @Override
+    public CompletableFuture<Void> releaseArena(ArenaInstance instance) {
+        return poolService.release(instance);
+    }
+
+    @Override
+    public ArenaMetrics getMetrics(String arenaId) {
+        return metricsService.getMetrics(arenaId);
+    }
+
+    private void loadFromConfig() {
+        ConfigurationSection arenasSection = arenasConfig
+            .getConfig()
+            .getConfigurationSection("arenas");
+        if (arenasSection == null) return;
+
+        for (String id : arenasSection.getKeys(false)) {
+            ConfigurationSection arenaSection =
+                arenasSection.getConfigurationSection(id);
+            if (arenaSection == null) continue;
+
+            Arena arena = parseArena(id, arenaSection);
+            arenas.put(id, arena);
+        }
+    }
+
+    private Arena parseArena(String id, ConfigurationSection section) {
+        Region region = parseRegion(section.getConfigurationSection("region"));
+        Location spawnA = parseLocation(
+            section.getConfigurationSection("spawnA")
         );
-        return;
-      }
-    }
-    tasks.add(preloadArena(arena));
-  }
-
-  private CompletableFuture<Void> preloadArena(Arena arena) {
-    return poolService
-      .scalePool(arena.getId(), arena.getPoolConfig().getPreloaded())
-      .exceptionally(ex -> {
-        Bukkit.getLogger().severe(
-          "Failed to preload arena pool " +
-            arena.getId() +
-            ": " +
-            ex.getMessage()
+        Location spawnB = parseLocation(
+            section.getConfigurationSection("spawnB")
         );
-        return null;
-      });
-  }
+        ArenaFlags flags = parseFlags(section.getConfigurationSection("flags"));
+        PoolConfig poolConfig = parsePoolConfig(
+            section.getConfigurationSection("pool")
+        );
+        ResetConfig resetConfig = parseResetConfig(
+            section.getConfigurationSection("reset")
+        );
 
-  private Optional<String> resolveWorldName(Arena arena) {
-    if (
-      arena.getRegion() != null &&
-      arena.getRegion().getWorld() != null &&
-      !arena.getRegion().getWorld().isEmpty()
-    ) {
-      return Optional.of(arena.getRegion().getWorld());
-    }
-    if (
-      arena.getSpawnA() != null &&
-      arena.getSpawnA().getWorld() != null &&
-      !arena.getSpawnA().getWorld().isEmpty()
-    ) {
-      return Optional.of(arena.getSpawnA().getWorld());
-    }
-    if (
-      arena.getSpawnB() != null &&
-      arena.getSpawnB().getWorld() != null &&
-      !arena.getSpawnB().getWorld().isEmpty()
-    ) {
-      return Optional.of(arena.getSpawnB().getWorld());
-    }
-    return Optional.empty();
-  }
+        List<String> compatibleKits = section.contains("compatibleKits")
+            ? section.getStringList("compatibleKits")
+            : new ArrayList<>();
 
-  public void handleWorldLoaded(String worldName) {
-    List<String> arenasToPreload = pendingPreloads.remove(worldName);
-    if (arenasToPreload == null || arenasToPreload.isEmpty()) {
-      return;
+        return Arena.builder()
+            .id(id)
+            .name(section.getString("name", id))
+            .displayName(section.getString("displayName", id))
+            .type(
+                ArenaType.valueOf(
+                    section.getString("type", "CUSTOM").toUpperCase()
+                )
+            )
+            .enabled(section.getBoolean("enabled", true))
+            .compatibleKits(compatibleKits)
+            .deathY(section.getInt("deathY", 0))
+            .buildLimitHeight(section.getInt("buildLimitHeight", 256))
+            .region(region)
+            .spawnA(spawnA)
+            .spawnB(spawnB)
+            .flags(flags)
+            .poolConfig(poolConfig)
+            .resetConfig(resetConfig)
+            .build();
     }
-    arenasToPreload
-      .stream()
-      .map(arenas::get)
-      .filter(java.util.Objects::nonNull)
-      .forEach(arena -> preloadArena(arena));
-  }
+
+    private Region parseRegion(ConfigurationSection section) {
+        if (section == null) return null;
+        return Region.builder()
+            .world(section.getString("world"))
+            .minX(section.getInt("minX"))
+            .minY(section.getInt("minY"))
+            .minZ(section.getInt("minZ"))
+            .maxX(section.getInt("maxX"))
+            .maxY(section.getInt("maxY"))
+            .maxZ(section.getInt("maxZ"))
+            .build();
+    }
+
+    private Location parseLocation(ConfigurationSection section) {
+        if (section == null) return null;
+        return Location.builder()
+            .world(section.getString("world"))
+            .x(section.getDouble("x"))
+            .y(section.getDouble("y"))
+            .z(section.getDouble("z"))
+            .yaw((float) section.getDouble("yaw", 0))
+            .pitch((float) section.getDouble("pitch", 0))
+            .build();
+    }
+
+    private ArenaFlags parseFlags(ConfigurationSection section) {
+        if (section == null) return new ArenaFlags();
+        return ArenaFlags.builder()
+            .allowPlace(section.getBoolean("allowPlace", false))
+            .allowBreak(section.getBoolean("allowBreak", false))
+            .allowLiquids(section.getBoolean("allowLiquids", false))
+            .allowProjectiles(section.getBoolean("allowProjectiles", true))
+            .allowPvP(section.getBoolean("allowPvP", true))
+            .allowHunger(section.getBoolean("allowHunger", true))
+            .allowItemDrop(section.getBoolean("allowItemDrop", false))
+            .allowItemPickup(section.getBoolean("allowItemPickup", false))
+            .build();
+    }
+
+    private PoolConfig parsePoolConfig(ConfigurationSection section) {
+        if (section == null) return new PoolConfig();
+        return PoolConfig.builder()
+            .preloaded(section.getInt("preloaded", 8))
+            .minIdle(section.getInt("minIdle", 4))
+            .maxActive(section.getInt("maxActive", 32))
+            .autoScale(section.getBoolean("autoScale", true))
+            .build();
+    }
+
+    private ResetConfig parseResetConfig(ConfigurationSection section) {
+        if (section == null) return new ResetConfig();
+        String strategyStr = section.getString("strategy", "HYBRID");
+        ResetStrategy strategy;
+        try {
+            strategy = ResetStrategy.valueOf(strategyStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            strategy = ResetStrategy.HYBRID;
+        }
+
+        return ResetConfig.builder()
+            .strategy(strategy)
+            .thresholdT1(section.getDouble("thresholdT1", 0.18))
+            .thresholdT2(section.getDouble("thresholdT2", 0.55))
+            .perTickBudget(section.getInt("perTickBudget", 10000))
+            .async(section.getBoolean("async", true))
+            .backoffTpsThreshold(section.getInt("backoffTpsThreshold", 195))
+            .build();
+    }
+
+    private void saveToConfig(Arena arena) {
+        String path = "arenas." + arena.getId();
+        arenasConfig.getConfig().set(path + ".name", arena.getName());
+        arenasConfig
+            .getConfig()
+            .set(path + ".displayName", arena.getDisplayName());
+        arenasConfig.getConfig().set(path + ".type", arena.getType().name());
+        arenasConfig.getConfig().set(path + ".enabled", arena.isEnabled());
+        arenasConfig
+            .getConfig()
+            .set(path + ".compatibleKits", arena.getCompatibleKits());
+        arenasConfig.getConfig().set(path + ".deathY", arena.getDeathY());
+        arenasConfig
+            .getConfig()
+            .set(path + ".buildLimitHeight", arena.getBuildLimitHeight());
+
+        if (arena.getRegion() != null) {
+            saveRegion(path + ".region", arena.getRegion());
+        }
+        if (arena.getSpawnA() != null) {
+            saveLocation(path + ".spawnA", arena.getSpawnA());
+        }
+        if (arena.getSpawnB() != null) {
+            saveLocation(path + ".spawnB", arena.getSpawnB());
+        }
+        if (arena.getFlags() != null) {
+            saveFlags(path + ".flags", arena.getFlags());
+        }
+        if (arena.getPoolConfig() != null) {
+            savePoolConfig(path + ".pool", arena.getPoolConfig());
+        }
+        if (arena.getResetConfig() != null) {
+            saveResetConfig(path + ".reset", arena.getResetConfig());
+        }
+
+        arenasConfig.save();
+    }
+
+    private void saveRegion(String path, Region region) {
+        arenasConfig.getConfig().set(path + ".world", region.getWorld());
+        arenasConfig.getConfig().set(path + ".minX", region.getMinX());
+        arenasConfig.getConfig().set(path + ".minY", region.getMinY());
+        arenasConfig.getConfig().set(path + ".minZ", region.getMinZ());
+        arenasConfig.getConfig().set(path + ".maxX", region.getMaxX());
+        arenasConfig.getConfig().set(path + ".maxY", region.getMaxY());
+        arenasConfig.getConfig().set(path + ".maxZ", region.getMaxZ());
+    }
+
+    private void saveLocation(String path, Location location) {
+        arenasConfig.getConfig().set(path + ".world", location.getWorld());
+        arenasConfig.getConfig().set(path + ".x", location.getX());
+        arenasConfig.getConfig().set(path + ".y", location.getY());
+        arenasConfig.getConfig().set(path + ".z", location.getZ());
+        arenasConfig.getConfig().set(path + ".yaw", location.getYaw());
+        arenasConfig.getConfig().set(path + ".pitch", location.getPitch());
+    }
+
+    private void saveFlags(String path, ArenaFlags flags) {
+        arenasConfig
+            .getConfig()
+            .set(path + ".allowPlace", flags.isAllowPlace());
+        arenasConfig
+            .getConfig()
+            .set(path + ".allowBreak", flags.isAllowBreak());
+        arenasConfig
+            .getConfig()
+            .set(path + ".allowLiquids", flags.isAllowLiquids());
+        arenasConfig
+            .getConfig()
+            .set(path + ".allowProjectiles", flags.isAllowProjectiles());
+        arenasConfig.getConfig().set(path + ".allowPvP", flags.isAllowPvP());
+        arenasConfig
+            .getConfig()
+            .set(path + ".allowHunger", flags.isAllowHunger());
+        arenasConfig
+            .getConfig()
+            .set(path + ".allowItemDrop", flags.isAllowItemDrop());
+        arenasConfig
+            .getConfig()
+            .set(path + ".allowItemPickup", flags.isAllowItemPickup());
+    }
+
+    private void savePoolConfig(String path, PoolConfig config) {
+        arenasConfig
+            .getConfig()
+            .set(path + ".preloaded", config.getPreloaded());
+        arenasConfig.getConfig().set(path + ".minIdle", config.getMinIdle());
+        arenasConfig
+            .getConfig()
+            .set(path + ".maxActive", config.getMaxActive());
+        arenasConfig.getConfig().set(path + ".autoScale", config.isAutoScale());
+    }
+
+    private void saveResetConfig(String path, ResetConfig config) {
+        arenasConfig
+            .getConfig()
+            .set(path + ".strategy", config.getStrategy().name());
+        arenasConfig
+            .getConfig()
+            .set(path + ".thresholdT1", config.getThresholdT1());
+        arenasConfig
+            .getConfig()
+            .set(path + ".thresholdT2", config.getThresholdT2());
+        arenasConfig
+            .getConfig()
+            .set(path + ".perTickBudget", config.getPerTickBudget());
+        arenasConfig.getConfig().set(path + ".async", config.isAsync());
+        arenasConfig
+            .getConfig()
+            .set(
+                path + ".backoffTpsThreshold",
+                config.getBackoffTpsThreshold()
+            );
+    }
+
+    private void deleteFromConfig(String id) {
+        arenasConfig.getConfig().set("arenas." + id, null);
+        arenasConfig.save();
+    }
+
+    private void handleArenaPreload(
+        Arena arena,
+        List<CompletableFuture<Void>> tasks
+    ) {
+        Optional<String> resolvedWorld = resolveWorldName(arena);
+        if (resolvedWorld.isPresent()) {
+            String worldName = resolvedWorld.get();
+            World world = Bukkit.getWorld(worldName);
+            if (world == null) {
+                pendingPreloads
+                    .computeIfAbsent(worldName, key -> new ArrayList<>())
+                    .add(arena.getId());
+                Bukkit.getLogger().warning(
+                    "Deferring arena pool preload for " +
+                        arena.getId() +
+                        " until world " +
+                        worldName +
+                        " is loaded."
+                );
+                return;
+            }
+        }
+        tasks.add(preloadArena(arena));
+    }
+
+    private CompletableFuture<Void> preloadArena(Arena arena) {
+        return poolService
+            .scalePool(arena.getId(), arena.getPoolConfig().getPreloaded())
+            .exceptionally(ex -> {
+                Bukkit.getLogger().severe(
+                    "Failed to preload arena pool " +
+                        arena.getId() +
+                        ": " +
+                        ex.getMessage()
+                );
+                return null;
+            });
+    }
+
+    private Optional<String> resolveWorldName(Arena arena) {
+        if (
+            arena.getRegion() != null &&
+            arena.getRegion().getWorld() != null &&
+            !arena.getRegion().getWorld().isEmpty()
+        ) {
+            return Optional.of(arena.getRegion().getWorld());
+        }
+        if (
+            arena.getSpawnA() != null &&
+            arena.getSpawnA().getWorld() != null &&
+            !arena.getSpawnA().getWorld().isEmpty()
+        ) {
+            return Optional.of(arena.getSpawnA().getWorld());
+        }
+        if (
+            arena.getSpawnB() != null &&
+            arena.getSpawnB().getWorld() != null &&
+            !arena.getSpawnB().getWorld().isEmpty()
+        ) {
+            return Optional.of(arena.getSpawnB().getWorld());
+        }
+        return Optional.empty();
+    }
+
+    public void handleWorldLoaded(String worldName) {
+        List<String> arenasToPreload = pendingPreloads.remove(worldName);
+        if (arenasToPreload == null || arenasToPreload.isEmpty()) {
+            return;
+        }
+        arenasToPreload
+            .stream()
+            .map(arenas::get)
+            .filter(java.util.Objects::nonNull)
+            .forEach(arena -> preloadArena(arena));
+    }
 }

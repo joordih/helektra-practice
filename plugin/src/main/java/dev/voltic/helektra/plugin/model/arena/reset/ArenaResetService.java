@@ -2,156 +2,157 @@ package dev.voltic.helektra.plugin.model.arena.reset;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import dev.voltic.helektra.api.model.arena.*;
-import dev.voltic.helektra.api.repository.IArenaJournalRepository;
+import dev.voltic.helektra.api.model.arena.Arena;
+import dev.voltic.helektra.api.model.arena.ArenaInstance;
+import dev.voltic.helektra.api.model.arena.IArenaResetService;
+import dev.voltic.helektra.api.model.arena.IArenaService;
+import dev.voltic.helektra.api.model.arena.IArenaSnapshotService;
+import dev.voltic.helektra.api.model.arena.IMetricsService;
+import dev.voltic.helektra.api.model.arena.IPhysicsGuardService;
+import dev.voltic.helektra.api.model.arena.ResetStrategy;
 import dev.voltic.helektra.plugin.model.arena.event.BukkitArenaResetCompletedEvent;
 import dev.voltic.helektra.plugin.model.arena.event.BukkitArenaResetStartedEvent;
-import dev.voltic.helektra.plugin.model.arena.reset.strategies.*;
-import org.bukkit.Bukkit;
-
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bukkit.Bukkit;
 
 @Singleton
-@SuppressWarnings("unused")
 public class ArenaResetService implements IArenaResetService {
-  private final Map<UUID, ResetTask> activeTasks = new ConcurrentHashMap<>();
-  private final IArenaService arenaService;
-  private final IArenaJournalRepository journalRepository;
-  private final IPhysicsGuardService physicsGuard;
-  private final ISchedulerService schedulerService;
-  private final IMetricsService metricsService;
 
-  private final JournalResetStrategy journalStrategy;
-  private final SectionResetStrategy sectionStrategy;
-  private final ChunkSwapResetStrategy chunkSwapStrategy;
-  private final HybridResetStrategy hybridStrategy;
+    private final Map<UUID, ResetTask> activeTasks = new ConcurrentHashMap<>();
+    private final IArenaService arenaService;
+    private final IArenaSnapshotService snapshotService;
+    private final IPhysicsGuardService physicsGuard;
+    private final IMetricsService metricsService;
 
-  @Inject
-  public ArenaResetService(IArenaService arenaService,
-      IArenaJournalRepository journalRepository,
-      IPhysicsGuardService physicsGuard,
-      ISchedulerService schedulerService,
-      IMetricsService metricsService,
-      JournalResetStrategy journalStrategy,
-      SectionResetStrategy sectionStrategy,
-      ChunkSwapResetStrategy chunkSwapStrategy,
-      HybridResetStrategy hybridStrategy) {
-    this.arenaService = arenaService;
-    this.journalRepository = journalRepository;
-    this.physicsGuard = physicsGuard;
-    this.schedulerService = schedulerService;
-    this.metricsService = metricsService;
-    this.journalStrategy = journalStrategy;
-    this.sectionStrategy = sectionStrategy;
-    this.chunkSwapStrategy = chunkSwapStrategy;
-    this.hybridStrategy = hybridStrategy;
-  }
-
-  @Override
-  public CompletableFuture<Void> resetInstance(ArenaInstance instance) {
-    Arena arena = arenaService.getArena(instance.getArenaId()).orElse(null);
-    if (arena == null) {
-      return CompletableFuture.failedFuture(
-          new IllegalArgumentException("Arena not found: " + instance.getArenaId()));
+    @Inject
+    public ArenaResetService(
+        IArenaService arenaService,
+        IArenaSnapshotService snapshotService,
+        IPhysicsGuardService physicsGuard,
+        IMetricsService metricsService
+    ) {
+        this.arenaService = arenaService;
+        this.snapshotService = snapshotService;
+        this.physicsGuard = physicsGuard;
+        this.metricsService = metricsService;
     }
 
-    long startTime = System.currentTimeMillis();
-    instance.setResetStartedAt(Instant.now());
+    @Override
+    public CompletableFuture<Void> resetInstance(ArenaInstance instance) {
+        Arena arena = arenaService.getArena(instance.getArenaId()).orElse(null);
+        if (arena == null) {
+            return CompletableFuture.failedFuture(
+                new IllegalArgumentException(
+                    "Arena not found: " + instance.getArenaId()
+                )
+            );
+        }
 
-    ResetStrategy strategy = arena.getResetConfig().getStrategy();
-    long estimatedBlocks = instance.getTotalBlocksModified();
+        ResetStrategy strategy = arena.getResetConfig().getStrategy();
+        long startTime = System.currentTimeMillis();
+        long modifiedBlocks = snapshotService.getModifiedCount(
+            instance.getInstanceId()
+        );
+        instance.setResetStartedAt(Instant.now());
 
-    Bukkit.getPluginManager().callEvent(
-        new BukkitArenaResetStartedEvent(arena.getId(), instance, strategy, estimatedBlocks));
+        Bukkit.getPluginManager().callEvent(
+            new BukkitArenaResetStartedEvent(
+                arena.getId(),
+                instance,
+                strategy,
+                modifiedBlocks
+            )
+        );
 
-    physicsGuard.suspend(instance.getInstanceRegion());
+        physicsGuard.suspend(instance.getInstanceRegion());
 
-    ResetTask task = new ResetTask(instance, strategy, startTime);
-    activeTasks.put(instance.getInstanceId(), task);
+        CompletableFuture<Void> rollback = snapshotService.rollback(
+            instance.getInstanceId()
+        );
+        ResetTask task = new ResetTask(rollback);
+        activeTasks.put(instance.getInstanceId(), task);
 
-    CompletableFuture<Void> resetFuture = executeStrategy(strategy, instance, arena);
+        return rollback.whenComplete((ignored, error) -> {
+            physicsGuard.resume(instance.getInstanceRegion());
+            activeTasks.remove(instance.getInstanceId());
 
-    return resetFuture
-        .thenCompose(v -> journalRepository.clearJournal(instance.getInstanceId().toString()))
-        .whenComplete((v, ex) -> {
-          physicsGuard.resume(instance.getInstanceRegion());
-          activeTasks.remove(instance.getInstanceId());
-
-          long duration = System.currentTimeMillis() - startTime;
-          instance.setLastResetDurationMs(duration);
-
-          boolean success = ex == null;
-          long blocksReset = instance.getTotalBlocksModified();
-          instance.setTotalBlocksModified(0);
-
-          Bukkit.getPluginManager().callEvent(
-              new BukkitArenaResetCompletedEvent(arena.getId(), instance, strategy, duration, blocksReset, success));
-
-          if (success) {
-            metricsService.recordReset(arena.getId(), strategy, duration, blocksReset);
-          }
+            long duration = System.currentTimeMillis() - startTime;
+            instance.setLastResetDurationMs(duration);
+            boolean success = error == null;
+            if (success) {
+                instance.setTotalBlocksModified(0);
+                metricsService.recordReset(
+                    arena.getId(),
+                    strategy,
+                    duration,
+                    modifiedBlocks
+                );
+            } else {
+                snapshotService.markCorrupted(instance.getInstanceId(), error);
+            }
+            instance.setResetStartedAt(null);
+            Bukkit.getPluginManager().callEvent(
+                new BukkitArenaResetCompletedEvent(
+                    arena.getId(),
+                    instance,
+                    strategy,
+                    duration,
+                    modifiedBlocks,
+                    success
+                )
+            );
         });
-  }
-
-  @Override
-  public CompletableFuture<Void> resetChunk(ArenaInstance instance, int chunkX, int chunkZ) {
-    Arena arena = arenaService.getArena(instance.getArenaId()).orElse(null);
-    if (arena == null) {
-      return CompletableFuture.failedFuture(
-          new IllegalArgumentException("Arena not found: " + instance.getArenaId()));
     }
 
-    return chunkSwapStrategy.resetChunk(instance, arena, chunkX, chunkZ);
-  }
-
-  @Override
-  public void cancelReset(ArenaInstance instance) {
-    ResetTask task = activeTasks.remove(instance.getInstanceId());
-    if (task != null) {
-      task.cancelled = true;
+    @Override
+    public CompletableFuture<Void> resetChunk(
+        ArenaInstance instance,
+        int chunkX,
+        int chunkZ
+    ) {
+        return resetInstance(instance);
     }
-  }
 
-  @Override
-  public boolean isResetting(ArenaInstance instance) {
-    return activeTasks.containsKey(instance.getInstanceId());
-  }
-
-  @Override
-  public double getResetProgress(ArenaInstance instance) {
-    ResetTask task = activeTasks.get(instance.getInstanceId());
-    return task != null ? task.progress : 0.0;
-  }
-
-  private CompletableFuture<Void> executeStrategy(ResetStrategy strategy,
-      ArenaInstance instance,
-      Arena arena) {
-    return switch (strategy) {
-      case JOURNAL_ONLY -> journalStrategy.reset(instance, arena);
-      case SECTION_REWRITE -> sectionStrategy.reset(instance, arena);
-      case CHUNK_SWAP -> chunkSwapStrategy.reset(instance, arena);
-      case HYBRID -> hybridStrategy.reset(instance, arena);
-      case FULL_REGENERATE -> chunkSwapStrategy.reset(instance, arena);
-    };
-  }
-
-  private static class ResetTask {
-    final ArenaInstance instance;
-    final ResetStrategy strategy;
-    final long startTime;
-    volatile double progress;
-    volatile boolean cancelled;
-
-    ResetTask(ArenaInstance instance, ResetStrategy strategy, long startTime) {
-      this.instance = instance;
-      this.strategy = strategy;
-      this.startTime = startTime;
-      this.progress = 0.0;
-      this.cancelled = false;
+    @Override
+    public void cancelReset(ArenaInstance instance) {
+        ResetTask task = activeTasks.remove(instance.getInstanceId());
+        if (task != null) {
+            task.cancel();
+        }
     }
-  }
+
+    @Override
+    public boolean isResetting(ArenaInstance instance) {
+        return activeTasks.containsKey(instance.getInstanceId());
+    }
+
+    @Override
+    public double getResetProgress(ArenaInstance instance) {
+        ResetTask task = activeTasks.get(instance.getInstanceId());
+        if (task == null) {
+            return 0.0;
+        }
+        return task.isCompleted() ? 1.0 : 0.0;
+    }
+
+    private static final class ResetTask {
+
+        private final CompletableFuture<Void> future;
+
+        ResetTask(CompletableFuture<Void> future) {
+            this.future = future;
+        }
+
+        void cancel() {
+            future.cancel(true);
+        }
+
+        boolean isCompleted() {
+            return future.isDone();
+        }
+    }
 }
