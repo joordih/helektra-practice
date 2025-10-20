@@ -2,16 +2,21 @@ package dev.voltic.helektra.plugin.model.kit;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.voltic.helektra.api.model.kit.IKit;
+import dev.voltic.helektra.api.model.kit.QueueType;
 import dev.voltic.helektra.plugin.model.kit.serialization.InventorySerializer;
 import dev.voltic.helektra.plugin.model.kit.serialization.SerializedInventory;
 import dev.voltic.helektra.plugin.model.kit.serialization.SerializedInventoryItem;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Material;
@@ -33,7 +38,6 @@ public class Kit implements IKit {
   private Set<String> arenaIds;
   private ItemStack icon;
   private Map<KitRule, Boolean> rules;
-  private int queue;
   private int playing;
   private int slot;
   private int kitEditorSlot;
@@ -41,6 +45,10 @@ public class Kit implements IKit {
   private List<PotionEffect> potionEffects;
   private double damageMultiplier;
   private List<String> description;
+
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private final Map<QueueType, Map<UUID, IKit>> queuedPlayers;
 
   private Kit(Builder builder) {
     this.name = builder.name;
@@ -51,7 +59,6 @@ public class Kit implements IKit {
     this.arenaIds = builder.arenaIds;
     this.icon = builder.icon;
     this.rules = builder.rules;
-    this.queue = 0;
     this.playing = 0;
     this.slot = builder.slot;
     this.health = builder.health;
@@ -59,6 +66,10 @@ public class Kit implements IKit {
     this.potionEffects = builder.potionEffects;
     this.damageMultiplier = builder.damageMultiplier;
     this.description = builder.description;
+    this.queuedPlayers = new EnumMap<>(QueueType.class);
+    for (QueueType type : QueueType.values()) {
+      this.queuedPlayers.put(type, new HashMap<>());
+    }
   }
 
   public static Builder builder() {
@@ -249,14 +260,31 @@ public class Kit implements IKit {
     }
   }
 
-  public void incrementQueue() {
-    queue++;
+  @Override
+  public int getQueue(QueueType type) {
+    return queuedPlayers.getOrDefault(type, Collections.emptyMap()).size();
   }
 
-  public void decrementQueue() {
-    if (queue > 0) {
-      queue--;
+  @Override
+  public Map<UUID, IKit> getQueuedPlayers(QueueType type) {
+    return Collections.unmodifiableMap(
+      queuedPlayers.getOrDefault(type, Collections.emptyMap())
+    );
+  }
+
+  @Override
+  public void incrementQueue(UUID playerId, QueueType type) {
+    queuedPlayers.get(type).putIfAbsent(playerId, this);
+    for (QueueType otherType : QueueType.values()) {
+      if (otherType != type) {
+        queuedPlayers.get(otherType).remove(playerId);
+      }
     }
+  }
+
+  @Override
+  public void decrementQueue(UUID playerId, QueueType type) {
+    queuedPlayers.get(type).remove(playerId);
   }
 
   public void incrementPlaying() {
@@ -329,7 +357,15 @@ public class Kit implements IKit {
   @Override
   public String toString() {
     return (
-      "Kit{name='" + name + "', queue=" + queue + ", playing=" + playing + "}"
+      "Kit{name='" +
+      name +
+      "', unrankedQueue=" +
+      getQueue(QueueType.UNRANKED) +
+      ", rankedQueue=" +
+      getQueue(QueueType.RANKED) +
+      ", playing=" +
+      playing +
+      "}"
     );
   }
 }

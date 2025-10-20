@@ -10,12 +10,14 @@ import dev.voltic.helektra.plugin.model.profile.state.ProfileStateManager;
 import dev.voltic.helektra.plugin.nms.strategy.NmsStrategies;
 import dev.voltic.helektra.plugin.nms.strategy.impl.NmsBossBarStrategy;
 import dev.voltic.helektra.plugin.utils.BukkitUtils;
+import dev.voltic.helektra.plugin.utils.LocationUtil;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
 import dev.voltic.helektra.plugin.utils.xseries.XPotion;
 import jakarta.inject.Inject;
 import java.util.Optional;
 import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -62,6 +64,11 @@ public class PlayerListeners implements Listener {
   public void onPlayerJoin(PlayerJoinEvent event) {
     var player = event.getPlayer();
     var uuid = player.getUniqueId();
+
+    Location spawnLocation = LocationUtil.deserialize(
+      helektra.getSettingsConfig().getConfig().getString("settings.spawn")
+    );
+    player.teleport(spawnLocation);
 
     Bukkit.getScheduler().runTaskLater(
       helektra,

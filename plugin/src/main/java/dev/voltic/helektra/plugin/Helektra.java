@@ -12,6 +12,7 @@ import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.scoreboard.IScoreboardService;
 import dev.voltic.helektra.api.repository.RepositoryFactory;
 import dev.voltic.helektra.plugin.api.HelektraAPI;
+import dev.voltic.helektra.plugin.commands.HelektraCommand;
 import dev.voltic.helektra.plugin.di.ArenaModule;
 import dev.voltic.helektra.plugin.di.FriendModule;
 import dev.voltic.helektra.plugin.di.KitModule;
@@ -26,11 +27,14 @@ import dev.voltic.helektra.plugin.model.arena.commands.ArenaCommand;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaBlockTrackingListener;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaProtectionListener;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaSelectionListener;
+import dev.voltic.helektra.plugin.model.arena.listeners.ArenaWorldListener;
 import dev.voltic.helektra.plugin.model.kit.commands.KitCommand;
 import dev.voltic.helektra.plugin.model.match.MatchServiceImpl;
 import dev.voltic.helektra.plugin.model.match.commands.DuelCommand;
 import dev.voltic.helektra.plugin.model.match.commands.QueueCommand;
+import dev.voltic.helektra.plugin.model.match.listeners.MatchEndListener;
 import dev.voltic.helektra.plugin.model.match.listeners.MatchListener;
+import dev.voltic.helektra.plugin.model.match.listeners.QueueMatchListener;
 import dev.voltic.helektra.plugin.model.profile.commands.FriendCommand;
 import dev.voltic.helektra.plugin.model.profile.commands.SettingsCommand;
 import dev.voltic.helektra.plugin.model.profile.friend.listeners.FriendAddPromptListener;
@@ -195,9 +199,12 @@ public final class Helektra extends JavaPlugin {
       ArenaSelectionListener.class,
       ArenaProtectionListener.class,
       ArenaBlockTrackingListener.class,
+      ArenaWorldListener.class,
       ScoreboardListener.class,
       HotbarInteractListener.class,
       MatchListener.class,
+      MatchEndListener.class,
+      QueueMatchListener.class,
       FriendAddPromptListener.class
     ).forEach(listenerClass -> {
       Object listener = injector.getInstance(listenerClass);
@@ -232,6 +239,10 @@ public final class Helektra extends JavaPlugin {
     );
     manager.registerCommands(
       builder.fromClass(injector.getInstance(FriendCommand.class))
+    );
+
+    manager.registerCommands(
+      builder.fromClass(injector.getInstance(HelektraCommand.class))
     );
 
     log(

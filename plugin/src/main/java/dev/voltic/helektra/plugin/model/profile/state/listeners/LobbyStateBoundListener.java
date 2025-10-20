@@ -1,6 +1,9 @@
 package dev.voltic.helektra.plugin.model.profile.state.listeners;
 
+import dev.voltic.helektra.api.model.profile.IProfile;
+import dev.voltic.helektra.api.model.profile.IProfileService;
 import jakarta.inject.Inject;
+import java.util.Optional;
 import java.util.UUID;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,10 +19,13 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 
 public class LobbyStateBoundListener implements Listener {
 
+  private final IProfileService profileService;
   private UUID bound;
 
   @Inject
-  public LobbyStateBoundListener() {}
+  public LobbyStateBoundListener(IProfileService profileService) {
+    this.profileService = profileService;
+  }
 
   public LobbyStateBoundListener bind(UUID bound) {
     this.bound = bound;
@@ -35,7 +41,8 @@ public class LobbyStateBoundListener implements Listener {
   @EventHandler
   public void onInventoryDragEvent(InventoryDragEvent event) {
     if (!matches(event.getWhoClicked().getUniqueId())) return;
-    event.setCancelled(true);
+    var player = (Player) event.getWhoClicked();
+    event.setCancelled(handleKitMode(player));
   }
 
   @EventHandler
@@ -48,19 +55,20 @@ public class LobbyStateBoundListener implements Listener {
       clickedInventory == null ||
       !clickedInventory.equals(player.getInventory())
     ) return;
-    event.setCancelled(true);
+
+    event.setCancelled(handleKitMode(player));
   }
 
   @EventHandler
   public void onPlayerBreakBlock(BlockBreakEvent event) {
     if (!matches(event.getPlayer().getUniqueId())) return;
-    event.setCancelled(true);
+    event.setCancelled(handleKitMode(event.getPlayer()));
   }
 
   @EventHandler
   public void onPlayerPlaceBlock(BlockPlaceEvent event) {
     if (!matches(event.getPlayer().getUniqueId())) return;
-    event.setCancelled(true);
+    event.setCancelled(handleKitMode(event.getPlayer()));
   }
 
   @EventHandler
@@ -85,5 +93,15 @@ public class LobbyStateBoundListener implements Listener {
 
   private boolean matches(UUID uuid) {
     return bound != null && bound.equals(uuid);
+  }
+
+  private boolean handleKitMode(Player player) {
+    Optional<IProfile> optionalProfile = profileService.getCachedProfile(
+      player.getUniqueId()
+    );
+    if (!optionalProfile.isPresent()) return true;
+
+    IProfile profile = optionalProfile.get();
+    return !profile.getSettings().isKitMode();
   }
 }

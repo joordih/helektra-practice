@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.google.inject.Inject;
@@ -18,12 +19,14 @@ import dev.voltic.helektra.plugin.model.arena.world.WorldGateway;
 public class FileArenaTemplateRepository implements IArenaTemplateRepository {
     private final Path templatesDir;
     private final WorldGateway worldGateway;
+    private final JavaPlugin plugin;
 
     @Inject
     public FileArenaTemplateRepository(JavaPlugin plugin, WorldGateway worldGateway) {
         this.templatesDir = plugin.getDataFolder().toPath().resolve("arena-templates");
         this.worldGateway = worldGateway;
-        
+        this.plugin = plugin;
+
         try {
             Files.createDirectories(templatesDir);
         } catch (IOException e) {
@@ -33,9 +36,18 @@ public class FileArenaTemplateRepository implements IArenaTemplateRepository {
 
     @Override
     public CompletableFuture<Void> saveTemplate(String arenaId, Region region) {
-        return CompletableFuture.runAsync(() -> {
+        CompletableFuture<byte[]> captureFuture = new CompletableFuture<>();
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
             try {
-                byte[] data = worldGateway.captureRegion(region);
+                captureFuture.complete(worldGateway.captureRegion(region));
+            } catch (Throwable t) {
+                captureFuture.completeExceptionally(t);
+            }
+        });
+
+        return captureFuture.thenAcceptAsync(data -> {
+            try {
                 Path templateFile = templatesDir.resolve(arenaId + ".template");
                 Files.write(templateFile, data);
             } catch (IOException e) {

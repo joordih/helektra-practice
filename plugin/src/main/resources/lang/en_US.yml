@@ -173,7 +173,10 @@ arena:
   spawn-set: "&aSpawn {spawn} set to your current location!"
   invalid-spawn: "&cInvalid spawn. Use 'a' or 'b'."
   pool-scale-missing-value: "&cYou must specify a size value."
+  pool-scaling-start: "&eScaling arena {id} pool to {size} instances..."
+  pool-scaling-progress: "&7Arena {id} scaling progress: {progress}%"
   pool-scaled: "&aArena {id} pool scaled to {size} instances."
+  pool-scale-error: "&cFailed to scale arena {id} pool. Please check the console."
   pool-cleared: "&aArena {id} pool cleared."
   pool-invalid-action: "&cInvalid pool action. Use 'scale <size>' or 'clear'."
 
@@ -195,8 +198,13 @@ match:
   status-header: "&6Match Status: &e{type}"
   status-participants: "&7Participants: &f{count}"
   status-spectators: "&7Spectators: &f{count}"
+  arena-reset-failed: "&cFailed to reset arena for match {match}: {error}"
   spectator-left: "&aYou left the match as a spectator."
   cannot-leave-participant: "&cYou cannot leave as a participant."
+  end:
+    winner: "&a{winner} won the match!"
+    draw: "&eThe match ended in a draw."
+    unknown: "Unknown"
 
 queue:
   kit-name: "&e{name}"
@@ -209,6 +217,13 @@ queue:
   already-in-queue: "&cYou are already in a queue or match!"
   ping-restriction: "&cYour ping does not meet the requirements for ranked matchmaking."
   leave-queue: "&cYou have left the queue."
+  already-in-match: "&cYou are already in a match."
+  profile-not-found: "&cYour profile is not ready yet. Please try again."
+  error-kit: "&cThat kit is not available right now."
+  no-arena: "&cNo arena instances are available for that kit."
+  error-general: "&cUnable to join the queue. Please try again later."
+  match-start: "&aMatch starting with kit &e{kit}&a!"
+  match-cancelled: "&cMatch cancelled. You have been sent back to the lobby."
 
 duel:
   kit-name: "&e{name}"

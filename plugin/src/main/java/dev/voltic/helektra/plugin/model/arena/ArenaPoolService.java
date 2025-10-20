@@ -1,8 +1,22 @@
 package dev.voltic.helektra.plugin.model.arena;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import dev.voltic.helektra.api.model.arena.Arena;
+import dev.voltic.helektra.api.model.arena.ArenaInstance;
+import dev.voltic.helektra.api.model.arena.IArenaPoolService;
+import dev.voltic.helektra.api.model.arena.IArenaResetService;
+import dev.voltic.helektra.api.model.arena.IArenaService;
+import dev.voltic.helektra.api.model.arena.IArenaTemplateService;
+import dev.voltic.helektra.api.model.arena.ISchedulerService;
+import dev.voltic.helektra.api.model.arena.PoolScaleObserver;
+import dev.voltic.helektra.api.model.arena.Region;
+import dev.voltic.helektra.plugin.model.arena.event.BukkitArenaInstanceAssignedEvent;
+import dev.voltic.helektra.plugin.utils.xseries.XEntityType;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -12,36 +26,32 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
+import java.util.concurrent.atomic.AtomicInteger;
 import org.bukkit.Bukkit;
-
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-
-import dev.voltic.helektra.api.model.arena.Arena;
-import dev.voltic.helektra.api.model.arena.ArenaInstance;
-import dev.voltic.helektra.api.model.arena.IArenaPoolService;
-import dev.voltic.helektra.api.model.arena.IArenaResetService;
-import dev.voltic.helektra.api.model.arena.IArenaService;
-import dev.voltic.helektra.api.model.arena.IArenaTemplateService;
-import dev.voltic.helektra.api.model.arena.ISchedulerService;
-import dev.voltic.helektra.plugin.model.arena.event.BukkitArenaInstanceAssignedEvent;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 
 @Singleton
 @SuppressWarnings("unused")
 public class ArenaPoolService implements IArenaPoolService {
+
   private final Map<String, ArenaPool> pools = new ConcurrentHashMap<>();
   private final IArenaTemplateService templateService;
   private final IArenaResetService resetService;
   private final IArenaService arenaService;
   private final ISchedulerService schedulerService;
-  private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+  private final ScheduledExecutorService executor =
+    Executors.newScheduledThreadPool(2);
 
   @Inject
-  public ArenaPoolService(IArenaTemplateService templateService,
-      IArenaResetService resetService,
-      IArenaService arenaService,
-      ISchedulerService schedulerService) {
+  public ArenaPoolService(
+    IArenaTemplateService templateService,
+    IArenaResetService resetService,
+    IArenaService arenaService,
+    ISchedulerService schedulerService
+  ) {
     this.templateService = templateService;
     this.resetService = resetService;
     this.arenaService = arenaService;
@@ -62,23 +72,36 @@ public class ArenaPoolService implements IArenaPoolService {
 
         long waitTime = System.currentTimeMillis() - startTime;
         Bukkit.getPluginManager().callEvent(
-            new BukkitArenaInstanceAssignedEvent(arenaId, instance, null, waitTime));
+          new BukkitArenaInstanceAssignedEvent(
+            arenaId,
+            instance,
+            null,
+            waitTime
+          )
+        );
 
         return CompletableFuture.completedFuture(instance);
       }
 
-      return templateService.cloneFromTemplate(arenaId)
-          .thenApply(newInstance -> {
-            newInstance.setState(ArenaInstance.ArenaInstanceState.IN_USE);
-            newInstance.setLastUsedAt(Instant.now());
-            pool.addInstance(newInstance);
+      return templateService
+        .cloneFromTemplate(arenaId)
+        .thenApply(newInstance -> {
+          newInstance.setState(ArenaInstance.ArenaInstanceState.IN_USE);
+          newInstance.setLastUsedAt(Instant.now());
+          pool.addInstance(newInstance);
 
-            long waitTime = System.currentTimeMillis() - startTime;
-            Bukkit.getPluginManager().callEvent(
-                new BukkitArenaInstanceAssignedEvent(arenaId, newInstance, null, waitTime));
+          long waitTime = System.currentTimeMillis() - startTime;
+          Bukkit.getPluginManager().callEvent(
+            new BukkitArenaInstanceAssignedEvent(
+              arenaId,
+              newInstance,
+              null,
+              waitTime
+            )
+          );
 
-            return newInstance;
-          });
+          return newInstance;
+        });
     });
   }
 
@@ -91,17 +114,20 @@ public class ArenaPoolService implements IArenaPoolService {
 
     instance.setState(ArenaInstance.ArenaInstanceState.RESETTING);
 
-    return resetService.resetInstance(instance)
-        .thenAccept(v -> {
-          instance.setState(ArenaInstance.ArenaInstanceState.AVAILABLE);
-          pool.returnInstance(instance);
-        })
-        .exceptionally(ex -> {
-          Bukkit.getLogger().severe("Failed to reset arena instance: " + ex.getMessage());
-          instance.setState(ArenaInstance.ArenaInstanceState.CORRUPTED);
-          pool.removeInstance(instance);
-          return null;
-        });
+    return cleanupEntities(instance)
+      .thenCompose(v -> resetService.resetInstance(instance))
+      .thenAccept(v -> {
+        instance.setState(ArenaInstance.ArenaInstanceState.AVAILABLE);
+        pool.returnInstance(instance);
+      })
+      .exceptionally(ex -> {
+        Bukkit.getLogger().severe(
+          "Failed to reset arena instance: " + ex.getMessage()
+        );
+        instance.setState(ArenaInstance.ArenaInstanceState.CORRUPTED);
+        pool.removeInstance(instance);
+        return null;
+      });
   }
 
   @Override
@@ -129,20 +155,68 @@ public class ArenaPoolService implements IArenaPoolService {
   }
 
   @Override
-  public void scalePool(String arenaId, int targetSize) {
-    getOrCreatePool(arenaId).thenAccept(pool -> {
+  public CompletableFuture<Void> scalePool(
+    String arenaId,
+    int targetSize,
+    PoolScaleObserver observer
+  ) {
+    PoolScaleObserver progressObserver = observer != null
+      ? observer
+      : PoolScaleObserver.noop();
+    return getOrCreatePool(arenaId).thenCompose(pool -> {
+      arenaService
+        .getArena(arenaId)
+        .ifPresent(arena -> {
+          if (arena.getPoolConfig().getPreloaded() != targetSize) {
+            arena.getPoolConfig().setPreloaded(targetSize);
+            arenaService.saveArena(arena);
+          }
+        });
       int current = pool.getTotalCount();
-
-      if (targetSize > current) {
-        int toCreate = targetSize - current;
-        for (int i = 0; i < toCreate; i++) {
-          templateService.cloneFromTemplate(arenaId)
-              .thenAccept(pool::addInstance);
-        }
-      } else if (targetSize < current) {
-        int toRemove = current - targetSize;
-        pool.removeExcess(toRemove);
+      int difference = targetSize - current;
+      if (difference == 0) {
+        progressObserver.onProgress(arenaId, 1, 1);
+        return CompletableFuture.completedFuture(null);
       }
+      int totalOperations = Math.abs(difference);
+      AtomicInteger completed = new AtomicInteger();
+      progressObserver.onProgress(arenaId, 0, totalOperations);
+      if (difference > 0) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (int i = 0; i < difference; i++) {
+          CompletableFuture<Void> future = templateService
+            .cloneFromTemplate(arenaId)
+            .thenAccept(instance -> {
+              pool.addInstance(instance);
+              progressObserver.onProgress(
+                arenaId,
+                completed.incrementAndGet(),
+                totalOperations
+              );
+            });
+          futures.add(future);
+        }
+        return CompletableFuture.allOf(
+          futures.toArray(new CompletableFuture[0])
+        );
+      }
+      for (int i = 0; i < totalOperations; i++) {
+        if (pool.removeAvailableInstance()) {
+          progressObserver.onProgress(
+            arenaId,
+            completed.incrementAndGet(),
+            totalOperations
+          );
+        } else {
+          progressObserver.onProgress(
+            arenaId,
+            completed.get(),
+            totalOperations
+          );
+          break;
+        }
+      }
+      return CompletableFuture.completedFuture(null);
     });
   }
 
@@ -154,35 +228,79 @@ public class ArenaPoolService implements IArenaPoolService {
     }
   }
 
+  private CompletableFuture<Void> cleanupEntities(ArenaInstance instance) {
+    Region region = instance.getInstanceRegion();
+    if (
+      region == null || region.getWorld() == null || region.getWorld().isEmpty()
+    ) {
+      return CompletableFuture.completedFuture(null);
+    }
+    return schedulerService.runSync(() -> {
+      World world = Bukkit.getWorld(region.getWorld());
+      if (world == null) {
+        return;
+      }
+      Set<EntityType> removable = EnumSet.of(
+        XEntityType.ITEM.get(),
+        XEntityType.EXPERIENCE_ORB.get(),
+        XEntityType.ARROW.get(),
+        XEntityType.FALLING_BLOCK.get(),
+        XEntityType.TNT.get()
+      );
+      world
+        .getEntities()
+        .stream()
+        .filter(entity -> removable.contains(entity.getType()))
+        .filter(entity -> isInsideRegion(entity.getLocation(), region))
+        .forEach(Entity::remove);
+    });
+  }
+
+  private boolean isInsideRegion(Location location, Region region) {
+    return region.contains(
+      location.getBlockX(),
+      location.getBlockY(),
+      location.getBlockZ()
+    );
+  }
+
   private CompletableFuture<ArenaPool> getOrCreatePool(String arenaId) {
     if (pools.containsKey(arenaId)) {
       return CompletableFuture.completedFuture(pools.get(arenaId));
     }
 
-    return arenaService.getArena(arenaId)
-        .map(arena -> {
-          ArenaPool pool = new ArenaPool(arena);
-          pools.put(arenaId, pool);
+    return arenaService
+      .getArena(arenaId)
+      .map(arena -> {
+        ArenaPool pool = new ArenaPool(arena);
+        pools.put(arenaId, pool);
 
-          int preloadCount = arena.getPoolConfig().getPreloaded();
-          List<CompletableFuture<Void>> preloadFutures = new ArrayList<>();
+        int preloadCount = arena.getPoolConfig().getPreloaded();
+        List<CompletableFuture<Void>> preloadFutures = new ArrayList<>();
 
-          for (int i = 0; i < preloadCount; i++) {
-            CompletableFuture<Void> future = templateService.cloneFromTemplate(arenaId)
-                .thenAccept(pool::addInstance);
-            preloadFutures.add(future);
-          }
+        for (int i = 0; i < preloadCount; i++) {
+          CompletableFuture<Void> future = templateService
+            .cloneFromTemplate(arenaId)
+            .thenAccept(pool::addInstance);
+          preloadFutures.add(future);
+        }
 
-          return CompletableFuture.allOf(preloadFutures.toArray(new CompletableFuture[0]))
-              .thenApply(v -> pool);
-        })
-        .orElse(CompletableFuture.failedFuture(
-            new IllegalArgumentException("Arena not found: " + arenaId)));
+        return CompletableFuture.allOf(
+          preloadFutures.toArray(new CompletableFuture[0])
+        ).thenApply(v -> pool);
+      })
+      .orElse(
+        CompletableFuture.failedFuture(
+          new IllegalArgumentException("Arena not found: " + arenaId)
+        )
+      );
   }
 
   private static class ArenaPool {
+
     private final Arena arena;
-    private final Queue<ArenaInstance> available = new ConcurrentLinkedQueue<>();
+    private final Queue<ArenaInstance> available =
+      new ConcurrentLinkedQueue<>();
     private final Set<ArenaInstance> inUse = ConcurrentHashMap.newKeySet();
     private final Set<ArenaInstance> resetting = ConcurrentHashMap.newKeySet();
     private final Set<ArenaInstance> all = ConcurrentHashMap.newKeySet();
@@ -235,6 +353,15 @@ public class ArenaPoolService implements IArenaPoolService {
 
     List<ArenaInstance> getAllInstances() {
       return new ArrayList<>(all);
+    }
+
+    boolean removeAvailableInstance() {
+      ArenaInstance instance = available.poll();
+      if (instance == null) {
+        return false;
+      }
+      removeInstance(instance);
+      return true;
     }
 
     void removeExcess(int count) {

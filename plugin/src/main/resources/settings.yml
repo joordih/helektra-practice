@@ -9,3 +9,4 @@ settings:
       lore:
         - "&5This is a golden head!"
         - "&5Consume it to get superpowers!"
+  spawn: world;0.00;0.00;0.00;0.00;0.00

@@ -7,14 +7,15 @@ import dev.voltic.helektra.api.model.match.IMatchService;
 import dev.voltic.helektra.api.model.match.MatchStatus;
 import dev.voltic.helektra.api.model.match.MatchType;
 import dev.voltic.helektra.api.model.match.Participant;
+import dev.voltic.helektra.plugin.model.match.event.MatchEndedEvent;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.bukkit.Bukkit;
 
 @Singleton
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
@@ -24,7 +25,7 @@ public class MatchServiceImpl implements IMatchService {
     @Override
     public IMatch createMatch(MatchType type, Arena arena, IKit kit, List<UUID> participantIds) {
         String matchId = generateMatchId();
-        
+
         List<Participant> participants = new ArrayList<>();
         for (UUID uniqueId : participantIds) {
             participants.add(Participant.builder()
@@ -74,6 +75,11 @@ public class MatchServiceImpl implements IMatchService {
 
     @Override
     public void endMatch(String matchId) {
+        endMatch(matchId, Optional.empty());
+    }
+
+    @Override
+    public void endMatch(String matchId, Optional<Participant> winner) {
         Optional<IMatch> matchOpt = repository.findById(matchId);
         if (matchOpt.isPresent()) {
             IMatch match = matchOpt.get();
@@ -82,6 +88,7 @@ public class MatchServiceImpl implements IMatchService {
                 ((Match) match).setEndTime(System.currentTimeMillis());
             }
             repository.save(match);
+            Bukkit.getPluginManager().callEvent(new MatchEndedEvent(match, winner));
         }
     }
 

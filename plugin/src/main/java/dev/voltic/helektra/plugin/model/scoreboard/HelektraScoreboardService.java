@@ -1,6 +1,7 @@
 package dev.voltic.helektra.plugin.model.scoreboard;
 
 import dev.voltic.helektra.api.model.profile.IProfileService;
+import dev.voltic.helektra.api.model.queue.IQueueService;
 import dev.voltic.helektra.plugin.Helektra;
 import dev.voltic.helektra.plugin.model.scoreboard.config.PlaceholderService;
 import dev.voltic.helektra.plugin.model.scoreboard.config.ScoreboardConfiguration;
@@ -24,7 +25,7 @@ public class HelektraScoreboardService extends ScoreboardService {
   private final PlaceholderService placeholderService;
 
   @Inject
-  public HelektraScoreboardService(IProfileService profileService, Helektra plugin) {
+  public HelektraScoreboardService(IProfileService profileService, IQueueService queueService, Helektra plugin) {
     super();
 
     this.config = ScoreboardConfiguration.fromConfig(plugin.getScoreboardsConfig());
@@ -33,7 +34,7 @@ public class HelektraScoreboardService extends ScoreboardService {
     placeholderService.setPlaceholderAPIEnabled(true);
 
     registerProvider(new GameScoreboardProvider(profileService, config, placeholderService));
-    registerProvider(new QueueScoreboardProvider(profileService, config, placeholderService));
+    registerProvider(new QueueScoreboardProvider(profileService, config, placeholderService, queueService));
     registerProvider(new EventScoreboardProvider(profileService, config, placeholderService));
     registerProvider(new SpectatorScoreboardProvider(profileService, config, placeholderService));
     registerProvider(new KitEditorScoreboardProvider(profileService, config, placeholderService));

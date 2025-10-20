@@ -57,11 +57,7 @@ public class ArenaTemplateService implements IArenaTemplateService {
                 Location instanceSpawnB = offsetLocation(arena.getSpawnB(), offsetX, offsetZ);
 
                 return templateRepository.loadTemplate(arenaId)
-                    .thenCompose(templateData -> 
-                        schedulerService.runSync(() -> 
-                            worldGateway.pasteRegion(instanceRegion, templateData)
-                        )
-                    )
+                    .thenCompose(templateData -> worldGateway.pasteRegion(instanceRegion, templateData))
                     .thenApply(v -> ArenaInstance.builder()
                         .instanceId(instanceId)
                         .arenaId(arenaId)

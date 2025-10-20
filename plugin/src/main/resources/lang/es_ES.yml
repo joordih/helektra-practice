@@ -171,7 +171,10 @@ arena:
   spawn-set: "&aSpawn {spawn} establecido en tu ubicación actual!"
   invalid-spawn: "&cSpawn inválido. Usa 'a' o 'b'."
   pool-scale-missing-value: "&cDebes especificar un valor de tamaño."
+  pool-scaling-start: "&eEscalando el pool de la arena {id} a {size} instancias..."
+  pool-scaling-progress: "&7Progreso de escalado de {id}: {progress}%"
   pool-scaled: "&aPool de arena {id} escalado a {size} instancias."
+  pool-scale-error: "&cNo se pudo escalar el pool de la arena {id}. Revisa la consola."
   pool-cleared: "&aPool de arena {id} limpiado."
   pool-invalid-action: "&cAcción de pool inválida. Usa 'scale <tamaño>' o 'clear'."
 
@@ -195,6 +198,11 @@ match:
   status-spectators: "&7Espectadores: &f{count}"
   spectator-left: "&aHas salido de la partida como espectador."
   cannot-leave-participant: "&cNo puedes salir siendo participante."
+  arena-reset-failed: "&cNo se pudo reiniciar la arena para la partida {match}: {error}"
+  end:
+    winner: "&a{winner} ganó la partida!"
+    draw: "&eLa partida terminó en empate."
+    unknown: "Desconocido"
 
 queue:
   kit-name: "&e{name}"
@@ -207,6 +215,13 @@ queue:
   already-in-queue: "&c¡Ya estás en una cola o partida!"
   ping-restriction: "&cTu ping no cumple los requisitos para matchmaking ranked."
   leave-queue: "&cHas salido de la cola."
+  already-in-match: "&cYa estás en una partida."
+  profile-not-found: "&cTu perfil aún no está listo. Intenta de nuevo."
+  error-kit: "&cEse kit no está disponible en este momento."
+  no-arena: "&cNo hay arenas disponibles para ese kit."
+  error-general: "&cNo se pudo unir a la cola. Inténtalo más tarde."
+  match-start: "&aLa partida comienza con el kit &e{kit}&a!"
+  match-cancelled: "&cLa partida fue cancelada. Has vuelto al lobby."
 
 duel:
   kit-name: "&e{name}"
