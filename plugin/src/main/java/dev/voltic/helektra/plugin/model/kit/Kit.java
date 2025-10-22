@@ -307,11 +307,19 @@ public class Kit implements IKit {
     player.getInventory().clear();
     player.getInventory().setArmorContents(null);
 
+    // Deserialize the full kit inventory to extract armor
+    ItemStack[] fullKitContents = InventorySerializer.deserialize(inventory, name);
+    
+    ItemStack[] armorContents = new ItemStack[4];
+    if (fullKitContents.length >= 40) {
+      System.arraycopy(fullKitContents, 36, armorContents, 0, 4);
+    }
+
     ItemStack[] loadoutContents;
     if (customLoadout != null && !customLoadout.isEmpty()) {
       loadoutContents = customLoadout.toArray(new ItemStack[0]);
     } else {
-      loadoutContents = InventorySerializer.deserialize(inventory, name);
+      loadoutContents = fullKitContents;
     }
 
     ItemStack[] playerContents = new ItemStack[player.getInventory().getSize()];
@@ -321,11 +329,13 @@ public class Kit implements IKit {
         0,
         playerContents,
         0,
-        Math.min(loadoutContents.length, playerContents.length)
+        Math.min(loadoutContents.length, 36)
       );
     }
 
     player.getInventory().setContents(playerContents);
+    
+    player.getInventory().setArmorContents(armorContents);
 
     player
       .getActivePotionEffects()

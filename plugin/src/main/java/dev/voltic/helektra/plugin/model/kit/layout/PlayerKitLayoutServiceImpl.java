@@ -15,12 +15,14 @@ import lombok.RequiredArgsConstructor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 
 @Singleton
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class PlayerKitLayoutServiceImpl implements IPlayerKitLayoutService {
 
   private final PlayerKitLayoutRepository repository;
+  private final JavaPlugin plugin;
 
   @Override
   public CompletableFuture<Optional<IPlayerKitLayout>> getLayout(
@@ -61,12 +63,14 @@ public class PlayerKitLayoutServiceImpl implements IPlayerKitLayoutService {
     String kitName = kit.getName();
 
     getLayout(playerId, kitName).thenAccept(layoutOpt -> {
-      if (layoutOpt.isPresent() && layoutOpt.get().hasCustomLayout()) {
-        ItemStack[] customContents = layoutOpt.get().getLayoutContents();
-        pluginKit.applyLoadout(player, Arrays.asList(customContents));
-      } else {
-        pluginKit.applyLoadout(player);
-      }
+      plugin.getServer().getScheduler().runTask(plugin, () -> {
+        if (layoutOpt.isPresent() && layoutOpt.get().hasCustomLayout()) {
+          ItemStack[] customContents = layoutOpt.get().getLayoutContents();
+          pluginKit.applyLoadout(player, Arrays.asList(customContents));
+        } else {
+          pluginKit.applyLoadout(player);
+        }
+      });
     });
   }
 
