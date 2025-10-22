@@ -10,13 +10,14 @@ hotbar:
         lore:
           - "&7Click to join a game queue"
         action: "JOIN_QUEUE"
-      kit:
+      kit_layout:
         slot: 4
-        material: "BOOK"
-        name: "&aKit Editor"
+        material: "CHEST"
+        name: "&eKit Layout Editor"
         lore:
-          - "&7Click to open the kit editor"
-        action: "KIT_EDITOR"
+          - "&7Customize your kit item layouts"
+          - "&7Click to select a kit"
+        action: "KIT_LAYOUT"
       settings:
         slot: 7
         material: "ANVIL"
@@ -30,7 +31,7 @@ hotbar:
         name: "&aFriends"
         lore:
           - "&7Click to manage friends"
-        action: "/friends"
+        action: "FRIENDS_MENU"
       cosmetics:
         slot: 1
         material: "CHEST"

@@ -17,6 +17,16 @@ public abstract class InjectableMenu
     this.menuPath = menuPath;
   }
 
+  protected InjectableMenu(
+    MenuConfigHelper menuConfig,
+    String menuPath,
+    int size
+  ) {
+    super(size, menuConfig.getMenuTitle(menuPath));
+    this.menuConfig = menuConfig;
+    this.menuPath = menuPath;
+  }
+
   @Override
   public abstract void setup(Player player);
 }

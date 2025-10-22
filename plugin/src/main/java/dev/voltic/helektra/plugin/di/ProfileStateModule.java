@@ -10,6 +10,7 @@ import dev.voltic.helektra.plugin.model.profile.hotbar.actions.HotbarAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.FriendsAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.JoinQueueAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.KitEditorAction;
+import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.KitLayoutAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.LeaveQueueAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.SettingsAction;
 import dev.voltic.helektra.plugin.model.profile.state.ProfileHotbarService;
@@ -61,6 +62,7 @@ public class ProfileStateModule extends AbstractModule {
     bindAction(actionBinder, JoinQueueAction.class);
     bindAction(actionBinder, LeaveQueueAction.class);
     bindAction(actionBinder, KitEditorAction.class);
+    bindAction(actionBinder, KitLayoutAction.class);
     bindAction(actionBinder, SettingsAction.class);
     bindAction(actionBinder, FriendsAction.class);
   }

@@ -68,6 +68,9 @@ kit:
   not-found: "&cKit {kit} not found."
   selected: "&aYou have selected the {kit} kit!"
   error: "&cAn error occurred while giving you the kit."
+  layout:
+    opened: "&eOpening layout editor for {kit}..."
+    invalid-state: "&cYou cannot edit layouts in your current state."
   list:
     title: "&6Available Kits"
     format: "&e- &f{kit}"
@@ -123,6 +126,12 @@ kit:
     icon-updated: "&aIcon for kit '&e{kit}&a' updated."
     slot-updated: "&aSlot for kit '&e{kit}&a' set to &e{slot}&a."
     cloned: "&aKit '&e{source}&a' cloned as '&e{target}&a'."
+  layout:
+    invalid-state: "&cYou can only edit kit layouts in the lobby!"
+    saved: "&aYour custom layout for &e{kit} &ahas been saved!"
+    reset: "&eLayout for &e{kit} &erestored to default."
+    canceled: "&cLayout editing canceled."
+    opened: "&eOpened layout editor for &e{kit}&e."
 
 time:
   teleporting: "&f&lTELEPORTING"

@@ -578,6 +578,54 @@ kit-selection:
         - ""
         - "&fAvailable Kits&7: {count}"
 
+kit-layout-selector:
+  title: "&eSelect Kit to Edit Layout"
+  size: 54
+  kit-name-format: "&e{kit}"
+  kit-lore:
+    - "&7Click to edit this kit's layout"
+    - ""
+    - "&eCustomize your item arrangement!"
+
+kit-layout-editor:
+  title: "&eKit Layout Editor"
+  size: 9
+  items:
+    save:
+      position: 1
+      material: LIME_WOOL
+      name: "&aSave Layout"
+      lore:
+        - "&7Save your custom layout"
+        - "&7and return to kit selector."
+        - ""
+        - "&eClick to save!"
+    back:
+      position: 4
+      material: ARROW
+      name: "&cBack"
+      lore:
+        - "&7Return to kit selector"
+        - "&7without saving changes."
+        - ""
+        - "&eClick to go back!"
+    reset:
+      position: 7
+      material: YELLOW_WOOL
+      name: "&eReset to Default"
+      lore:
+        - "&7Restore the default"
+        - "&7kit layout."
+        - ""
+        - "&eClick to reset!"
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&0"
+  messages:
+    saved: "&aYour layout has been saved!"
+    reset: "&eLayout restored to default."
+    back: "&7Returning to kit selector..."
+
 # Profile loading messages
 profile:
   loading-title: "&eLoading Profile..."

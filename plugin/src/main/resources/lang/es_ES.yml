@@ -23,6 +23,9 @@ kit:
   not-found: "&cKit {kit} no encontrado."
   selected: "&aHas seleccionado el kit {kit}!"
   error: "&cOcurrió un error al darte el kit."
+  layout:
+    opened: "&eAbriendo editor de diseño para {kit}..."
+    invalid-state: "&cNo puedes editar diseños en tu estado actual."
   list:
     title: "&6Kits Disponibles"
     format: "&e- &f{kit}"
@@ -78,6 +81,12 @@ kit:
     icon-updated: "&aIcono del kit '&e{kit}&a' actualizado."
     slot-updated: "&aSlot del kit '&e{kit}&a' establecido en &e{slot}&a."
     cloned: "&aKit '&e{source}&a' clonado como '&e{target}&a'."
+  layout:
+    invalid-state: "&c¡Solo puedes editar diseños de kit en el lobby!"
+    saved: "&a¡Tu diseño personalizado para &e{kit} &aha sido guardado!"
+    reset: "&eDiseño para &e{kit} &erestaurado al predeterminado."
+    canceled: "&cEdición de diseño cancelada."
+    opened: "&eEditor de diseño abierto para &e{kit}&e."
 
 friends:
   command:

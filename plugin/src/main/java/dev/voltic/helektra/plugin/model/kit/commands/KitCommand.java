@@ -2,6 +2,7 @@ package dev.voltic.helektra.plugin.model.kit.commands;
 
 import dev.voltic.helektra.api.model.kit.IKit;
 import dev.voltic.helektra.api.model.kit.IKitService;
+import dev.voltic.helektra.api.model.kit.IPlayerKitLayoutService;
 import dev.voltic.helektra.api.model.kit.QueueType;
 import dev.voltic.helektra.api.model.profile.IProfile;
 import dev.voltic.helektra.api.model.profile.IProfileService;
@@ -35,11 +36,17 @@ public class KitCommand implements CommandClass {
 
   private final IKitService kitService;
   private final IProfileService profileService;
+  private final IPlayerKitLayoutService layoutService;
 
   @Inject
-  public KitCommand(IKitService kitService, IProfileService profileService) {
+  public KitCommand(
+    IKitService kitService,
+    IProfileService profileService,
+    IPlayerKitLayoutService layoutService
+  ) {
     this.kitService = kitService;
     this.profileService = profileService;
+    this.layoutService = layoutService;
   }
 
   @Command(names = "")
@@ -264,8 +271,8 @@ public class KitCommand implements CommandClass {
       return;
     }
 
-    Kit kit = (Kit) optKit.get();
-    kit.applyLoadout(target);
+    IKit kit = optKit.get();
+    layoutService.applyLayout(target, kit);
     sender.sendMessage(
       TranslationUtils.translate(
         "kit.command.give.sender",

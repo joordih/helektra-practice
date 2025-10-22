@@ -30,4 +30,8 @@ public class MenuFactory {
       e.printStackTrace();
     }
   }
+
+  public <T> T getInstance(Class<T> clazz) {
+    return injector.getInstance(clazz);
+  }
 }

@@ -385,6 +385,13 @@ public final class InventorySerializer {
     return value;
   }
 
+  public static SerializedInventory serializeArray(ItemStack[] contents) {
+    if (contents == null || contents.length == 0) {
+      return SerializedInventory.empty();
+    }
+    return serialize(contents, contents.length);
+  }
+
   public static void apply(
     Player player,
     SerializedInventory inventory,
