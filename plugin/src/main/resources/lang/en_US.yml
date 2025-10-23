@@ -58,6 +58,30 @@ profile:
   loaded: "&aProfile loaded successfully!"
   error: "&cAn error occurred while loading your profile."
   saved: "&aYour settings have been saved!"
+  settings:
+    duel-requests:
+      enabled: "&aDuel requests enabled."
+      disabled: "&cDuel requests disabled."
+    party-requests:
+      enabled: "&aParty requests enabled."
+      disabled: "&cParty requests disabled."
+    spectators:
+      enabled: "&aSpectators enabled."
+      disabled: "&cSpectators disabled."
+    view-players:
+      enabled: "&aPlayer visibility enabled."
+      disabled: "&cPlayer visibility disabled."
+    event-messages:
+      enabled: "&aEvent messages enabled."
+      disabled: "&cEvent messages disabled."
+    kit-mode:
+      enabled: "&aKit mode enabled."
+      disabled: "&cKit mode disabled."
+    ping-matchmaking:
+      enabled: "&aPing matchmaking enabled."
+      disabled: "&cPing matchmaking disabled."
+    lobby-time:
+      updated: "&aLobby time set to &e{time}&a."
 
 kit:
   hover:
@@ -68,9 +92,6 @@ kit:
   not-found: "&cKit {kit} not found."
   selected: "&aYou have selected the {kit} kit!"
   error: "&cAn error occurred while giving you the kit."
-  layout:
-    opened: "&eOpening layout editor for {kit}..."
-    invalid-state: "&cYou cannot edit layouts in your current state."
   list:
     title: "&6Available Kits"
     format: "&e- &f{kit}"

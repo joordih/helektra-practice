@@ -16,6 +16,30 @@ profile:
   loaded: "&aPerfil cargado con éxito!"
   error: "&cOcurrió un error al cargar tu perfil."
   saved: "&aTus ajustes han sido guardados!"
+  settings:
+    duel-requests:
+      enabled: "&aSolicitudes de duelo habilitadas."
+      disabled: "&cSolicitudes de duelo deshabilitadas."
+    party-requests:
+      enabled: "&aInvitaciones de party habilitadas."
+      disabled: "&cInvitaciones de party deshabilitadas."
+    spectators:
+      enabled: "&aEspectadores habilitados."
+      disabled: "&cEspectadores deshabilitados."
+    view-players:
+      enabled: "&aVisibilidad de jugadores habilitada."
+      disabled: "&cVisibilidad de jugadores deshabilitada."
+    event-messages:
+      enabled: "&aMensajes de eventos habilitados."
+      disabled: "&cMensajes de eventos deshabilitados."
+    kit-mode:
+      enabled: "&aModo kit habilitado."
+      disabled: "&cModo kit deshabilitado."
+    ping-matchmaking:
+      enabled: "&aEmparejamiento por ping habilitado."
+      disabled: "&cEmparejamiento por ping deshabilitado."
+    lobby-time:
+      updated: "&aTiempo del lobby establecido en &e{time}&a."
 
 kit:
   received: "&aHas recibido el kit {kit}!"
@@ -23,9 +47,6 @@ kit:
   not-found: "&cKit {kit} no encontrado."
   selected: "&aHas seleccionado el kit {kit}!"
   error: "&cOcurrió un error al darte el kit."
-  layout:
-    opened: "&eAbriendo editor de diseño para {kit}..."
-    invalid-state: "&cNo puedes editar diseños en tu estado actual."
   list:
     title: "&6Kits Disponibles"
     format: "&e- &f{kit}"

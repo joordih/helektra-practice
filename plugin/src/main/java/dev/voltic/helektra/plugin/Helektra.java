@@ -80,6 +80,7 @@ public final class Helektra extends JavaPlugin {
   private FileConfig arenasConfig;
   private FileConfig scoreboardsConfig;
   private FileConfig hotbarConfig;
+  private FileConfig soundsConfig;
 
   private Injector injector;
   private RepositoryFactory repositoryFactory;
@@ -146,6 +147,7 @@ public final class Helektra extends JavaPlugin {
     this.arenasConfig = new FileConfig(this, "arenas.yml");
     this.scoreboardsConfig = new FileConfig(this, "scoreboards.yml");
     this.hotbarConfig = new FileConfig(this, "hotbar.yml");
+    this.soundsConfig = new FileConfig(this, "sounds.yml");
   }
 
   private void initTranslations() {

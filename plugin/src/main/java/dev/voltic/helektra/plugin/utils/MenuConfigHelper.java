@@ -3,6 +3,7 @@ package dev.voltic.helektra.plugin.utils;
 import com.google.inject.Singleton;
 import dev.voltic.helektra.plugin.Helektra;
 import dev.voltic.helektra.plugin.utils.config.FileConfig;
+import dev.voltic.helektra.plugin.utils.sound.ConfiguredSound;
 import dev.voltic.helektra.plugin.utils.xseries.XMaterial;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -79,6 +80,29 @@ public class MenuConfigHelper {
     );
   }
 
+  public ConfiguredSound getMenuSound(
+    @NotNull String menuPath,
+    @NotNull String type
+  ) {
+    ConfigurationSection menuSection = menusConfig
+      .getConfig()
+      .getConfigurationSection(menuPath);
+    if (menuSection == null) {
+      return null;
+    }
+    ConfigurationSection section = menuSection.getConfigurationSection(
+      "sounds." + type
+    );
+    if (section != null) {
+      return ConfiguredSound.fromSection(section).orElse(null);
+    }
+    Object value = menuSection.get("sounds." + type);
+    if (value == null) {
+      return null;
+    }
+    return ConfiguredSound.from(value).orElse(null);
+  }
+
   public List<String> getStringList(@NotNull String path) {
     return menusConfig
       .getConfig()
@@ -125,7 +149,7 @@ public class MenuConfigHelper {
     }
 
     public int getPosition() {
-      return section != null ? section.getInt("position", 0) : 0;
+      return getPrimarySlot();
     }
 
     public Material getMaterial() {
@@ -195,6 +219,16 @@ public class MenuConfigHelper {
       return ColorUtils.translate(section.getString(key, defaultValue));
     }
 
+    public String getRawString(String key) {
+      if (section == null) return "";
+      return section.getString(key, "");
+    }
+
+    public String getRawString(String key, String defaultValue) {
+      if (section == null) return defaultValue;
+      return section.getString(key, defaultValue);
+    }
+
     public int getInt(String key, int defaultValue) {
       if (section == null) return defaultValue;
       return section.getInt(key, defaultValue);
@@ -213,6 +247,53 @@ public class MenuConfigHelper {
 
     public boolean exists() {
       return section != null;
+    }
+
+    public List<Integer> getSlots() {
+      if (section == null) {
+        return List.of();
+      }
+      if (section.contains("slots")) {
+        List<Integer> slots = section.getIntegerList("slots");
+        return slots == null ? List.of() : List.copyOf(slots);
+      }
+      return List.of(getPrimarySlot());
+    }
+
+    public int getPrimarySlot() {
+      if (section == null) {
+        return 0;
+      }
+      if (section.contains("slot")) {
+        return section.getInt("slot", 0);
+      }
+      if (section.contains("position")) {
+        return section.getInt("position", 0);
+      }
+      if (section.contains("slots")) {
+        List<Integer> slots = section.getIntegerList("slots");
+        if (slots != null && !slots.isEmpty()) {
+          return slots.get(0);
+        }
+      }
+      return 0;
+    }
+
+    public ConfiguredSound getSound() {
+      if (section == null) {
+        return null;
+      }
+      ConfigurationSection soundSection = section.getConfigurationSection(
+        "sound"
+      );
+      if (soundSection != null) {
+        return ConfiguredSound.fromSection(soundSection).orElse(null);
+      }
+      Object value = section.get("sound");
+      if (value == null) {
+        return null;
+      }
+      return ConfiguredSound.from(value).orElse(null);
     }
 
     private Material parseMaterial(String materialName) {
@@ -258,5 +339,27 @@ public class MenuConfigHelper {
     private Material getDefaultMaterial() {
       return Material.STONE;
     }
+
+    public boolean hasExplicitSlot() {
+      if (section == null) return false;
+      if (section.contains("slot")) return true;
+      if (section.contains("position")) return true;
+      if (section.contains("slots")) {
+        List<Integer> slots = section.getIntegerList("slots");
+        return slots != null && !slots.isEmpty();
+      }
+      return false;
+    }
+  }
+
+  public boolean isPaginated(@NotNull String menuPath) {
+    return menusConfig.getConfig().getBoolean(menuPath + ".paginated", false);
+  }
+
+  public List<Integer> getContentSlots(@NotNull String menuPath) {
+    int start = menusConfig.getConfig().getInt(menuPath + ".content.start-slot", -1);
+    int end = menusConfig.getConfig().getInt(menuPath + ".content.end-slot", -1);
+    if (start < 0 || end < 0 || end < start) return List.of();
+    return java.util.stream.IntStream.rangeClosed(start, end).boxed().toList();
   }
 }

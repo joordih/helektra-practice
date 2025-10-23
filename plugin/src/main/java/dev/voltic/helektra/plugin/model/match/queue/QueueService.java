@@ -23,6 +23,7 @@ import dev.voltic.helektra.plugin.model.match.event.MatchStartedEvent;
 import dev.voltic.helektra.plugin.model.profile.state.ProfileStateManager;
 import dev.voltic.helektra.plugin.utils.ArenaLocationResolver;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
+import dev.voltic.helektra.plugin.utils.sound.PlayerSoundUtils;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,6 +138,7 @@ public class QueueService implements IQueueService {
       profileStateManager.setState(player, ProfileState.IN_QUEUE);
     }
     sendJoinMessage(player, kit, queueType);
+    PlayerSoundUtils.playQueueJoinSound(player);
     tryDispatch(key);
     return QueueJoinResult.SUCCESS;
   }
@@ -150,6 +152,7 @@ public class QueueService implements IQueueService {
     Player player = Bukkit.getPlayer(playerId);
     if (player != null && player.isOnline()) {
       player.sendMessage(TranslationUtils.translate("queue.leave-queue"));
+      PlayerSoundUtils.playQueueLeaveSound(player);
       profileService
         .getCachedProfile(playerId)
         .filter(profile -> profile.getProfileState() == ProfileState.IN_QUEUE)

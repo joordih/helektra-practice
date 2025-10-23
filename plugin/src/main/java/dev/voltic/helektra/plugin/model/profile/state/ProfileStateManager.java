@@ -5,6 +5,7 @@ import dev.voltic.helektra.api.model.profile.IProfile;
 import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.api.model.profile.ProfileState;
 import dev.voltic.helektra.api.model.scoreboard.IScoreboardService;
+import dev.voltic.helektra.plugin.utils.PlayerUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
@@ -103,6 +104,7 @@ public class ProfileStateManager {
       handler.createPlayerListeners(player, profile)
     );
 
+    PlayerUtils.clearPlayer(player);
     player.getInventory().clear();
     hotbarService.apply(player, state);
   }

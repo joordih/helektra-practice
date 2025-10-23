@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
+import dev.voltic.helektra.plugin.utils.sound.MenuSoundUtils;
 import fr.mrmicky.fastinv.FastInv;
 import org.bukkit.entity.Player;
 
@@ -17,16 +18,27 @@ public class MenuFactory {
     this.injector = injector;
   }
 
-  public <T extends FastInv & ConfigurableMenu> void openMenu(
-    Class<T> menuClass,
-    Player player
-  ) {
+  public void openMenu(Class<?> menuClass, Player player) {
     try {
-      T menu = injector.getInstance(menuClass);
-      menu.setup(player);
-      menu.open(player);
+      Object instance = injector.getInstance(menuClass);
+
+      if (instance instanceof ConfigurableMenu configurable) {
+        configurable.setup(player);
+      }
+
+      if (instance instanceof DynamicMenu dynamicMenu) {
+        dynamicMenu.openMenu(player);
+      } else if (instance instanceof FastInv fastInv) {
+        fastInv.open(player);
+      } else {
+        player.sendMessage(TranslationUtils.translate("error.generic"));
+        MenuSoundUtils.playErrorSound(player);
+        return;
+      }
+
     } catch (Exception e) {
       player.sendMessage(TranslationUtils.translate("error.generic"));
+      MenuSoundUtils.playErrorSound(player);
       e.printStackTrace();
     }
   }

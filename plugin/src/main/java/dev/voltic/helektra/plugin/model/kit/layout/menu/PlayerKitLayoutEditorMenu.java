@@ -46,7 +46,7 @@ public class PlayerKitLayoutEditorMenu extends InjectableMenu {
     MenuFactory menuFactory,
     JavaPlugin plugin
   ) {
-    super(menuConfig, "kit-layout-editor", 9);
+    super(menuConfig, "kit-layout-editor");
     this.menuConfig = menuConfig;
     this.kitService = kitService;
     this.layoutService = layoutService;
@@ -183,8 +183,8 @@ public class PlayerKitLayoutEditorMenu extends InjectableMenu {
       .name(fillerConfig.getName())
       .build();
 
-    for (int slot = 0; slot < 9; slot++) {
-      if (getInventory().getItem(slot) == null) {
+    for (int slot = 0; slot < this.getInventory().getSize(); slot++) {
+      if (this.getInventory().getItem(slot) == null) {
         setItem(slot, filler, event -> event.setCancelled(true));
       }
     }
@@ -296,6 +296,7 @@ public class PlayerKitLayoutEditorMenu extends InjectableMenu {
 
   @Override
   public void onClose(InventoryCloseEvent event) {
+    super.onClose(event);
     Player player = (Player) event.getPlayer();
 
     if (alreadyClosed) {

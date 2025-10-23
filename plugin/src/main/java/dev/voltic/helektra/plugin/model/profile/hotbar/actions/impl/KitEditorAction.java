@@ -3,12 +3,14 @@ package dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl;
 import dev.voltic.helektra.api.model.profile.ProfileState;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.HotbarAction;
 import dev.voltic.helektra.plugin.model.profile.state.ProfileStateManager;
+import dev.voltic.helektra.plugin.utils.sound.PlayerSoundUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.bukkit.entity.Player;
 
 @Singleton
 public class KitEditorAction implements HotbarAction {
+
   private final ProfileStateManager stateManager;
 
   @Inject
@@ -23,6 +25,7 @@ public class KitEditorAction implements HotbarAction {
 
   @Override
   public void execute(Player player) {
+    PlayerSoundUtils.playKitEditorOpenSound(player);
     stateManager.setState(player, ProfileState.KIT_EDITOR);
   }
 }

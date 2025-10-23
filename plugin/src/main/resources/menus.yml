@@ -1,126 +1,218 @@
-# Menu Configuration File
-# Configure all menus including size, items, positions, and messages
-
 settings:
-  title: "&6⚙ Settings"
-  size: 9 # Must be multiple of 9 (9, 18, 27, 36, 45, 54)
+  title: "&eSettings"
+  size: 27
+  paginated: true
+
+  content:
+    start-slot: 10
+    end-slot: 16
+
+  sounds:
+    open:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 1.2
+    close:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 0.8
+    default-click:
+      sound: UI_BUTTON_CLICK
+      volume: 1.0
+      pitch: 1.0
+
   items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&7"
+      lore: []
+
     duel-requests:
-      position: 0
       material: DIAMOND_SWORD
-      enabled-name: "&aDuel Requests"
-      disabled-name: "&cDuel Requests"
-      lore:
-        - "&fEnabled&7: {status}"
-        - ""
-        - "&eClick &fto &ctoggle &fduel requests"
+      enabled-name: "&6&lDuel Requests"
+      disabled-name: "&6&lDuel Requests"
+      description: "&7Allow players to challenge you to duels."
       placeholders:
-        status-enabled: "&aEnabled"
-        status-disabled: "&cDisabled"
+        yes: "Yes"
+        no: "No"
+        selected-yes-prefix: "&e&l█ &a&l"
+        selected-no-prefix: "&e&l█ &c&l"
+        unselected-prefix: "&e&l▌ &7"
+      lore:
+        - "%description%"
+        - ""
+        - "%status_yes%"
+        - "%status_no%"
+        - ""
+        - "&eClick to change!"
       messages:
-        enabled: "&aDuel requests enabled"
-        disabled: "&cDuel requests disabled"
-
-    ping-matchmaking:
-      position: 1
-      material-enabled: LEVER
-      material-disabled: REDSTONE_TORCH
-      enabled-name: "&aPing Matchmaking"
-      disabled-name: "&cPing Matchmaking"
-      lore:
-        - "&fCurrent&7: {status}"
-        - ""
-        - "&aSets your max acceptable ping"
-        - "&afor matchmaking"
-        - ""
-        - "&eLeft click &fto &6toggle"
-        - "&eRight click &fto &6modify"
-      status-enabled: "&a&l&oENABLED"
-      status-disabled: "&c&l&oDISABLED"
-
-    lobby-time:
-      position: 2
-      material: CLOCK
-      name: "&eLobby Time"
-      lore:
-        - "&fCurrent&7:"
-        - "  &7● {day}"
-        - "  &7● {afternoon}"
-        - "  &7● {night}"
-        - ""
-        - "&eClick &fto &6cycle &flobby time"
-      placeholders:
-        day-display: "&fDay"
-        day-selected: "&a&l&oDAY"
-        afternoon-display: "&fAfternoon"
-        afternoon-selected: "&a&l&oAFTERNOON"
-        night-display: "&fNight"
-        night-selected: "&a&l&oNIGHT"
-      message: "&eLobby time changed"
-
-    event-messages:
-      position: 3
-      material: PAPER
-      enabled-name: "&aEvent Messages"
-      disabled-name: "&cEvent Messages"
-      lore:
-        - "&fEnabled&7: {status}"
-        - ""
-        - "&eClick &fto &ctoggle &fevent messages"
-      placeholders:
-        status-enabled: "&aEnabled"
-        status-disabled: "&cDisabled"
-      messages:
-        enabled: "&aEvent messages enabled"
-        disabled: "&cEvent messages disabled"
-
-    view-players:
-      position: 4
-      material: PLAYER_HEAD
-      enabled-name: "&aView Players"
-      disabled-name: "&cView Players"
-      lore:
-        - "&fEnabled&7: {status}"
-        - ""
-        - "&eClick &fto &ctoggle &fplayer visibility"
-      placeholders:
-        status-enabled: "&aEnabled"
-        status-disabled: "&cDisabled"
-      messages:
-        enabled: "&aView players enabled"
-        disabled: "&cView players disabled"
+        enabled: "profile.settings.duel-requests.enabled"
+        disabled: "profile.settings.duel-requests.disabled"
 
     party-requests:
-      position: 5
       material: CAKE
-      enabled-name: "&aParty Requests"
-      disabled-name: "&cParty Requests"
-      lore:
-        - "&fEnabled&7: {status}"
-        - ""
-        - "&eClick &fto &ctoggle &fparty requests"
+      enabled-name: "&6&lParty Requests"
+      disabled-name: "&6&lParty Requests"
+      description: "&7Receive party invitations from other players."
       placeholders:
-        status-enabled: "&aEnabled"
-        status-disabled: "&cDisabled"
+        yes: "Yes"
+        no: "No"
+        selected-yes-prefix: "&e&l█ &a&l"
+        selected-no-prefix: "&e&l█ &c&l"
+        unselected-prefix: "&e&l▌ &7"
+      lore:
+        - "%description%"
+        - ""
+        - "%status_yes%"
+        - "%status_no%"
+        - ""
+        - "&eClick to change!"
       messages:
-        enabled: "&aParty requests enabled"
-        disabled: "&cParty requests disabled"
+        enabled: "profile.settings.party-requests.enabled"
+        disabled: "profile.settings.party-requests.disabled"
 
     spectators:
-      position: 6
       material: ENDER_EYE
-      enabled-name: "&aSpectators"
-      disabled-name: "&cSpectators"
-      lore:
-        - "&fEnabled&7: {status}"
-        - ""
-        - "&eClick &fto &ctoggle &fspectators"
+      enabled-name: "&6&lSpectators"
+      disabled-name: "&6&lSpectators"
+      description: "&7Allow spectators to watch your matches."
       placeholders:
-        status-enabled: "&aEnabled"
-        status-disabled: "&cDisabled"
+        yes: "Yes"
+        no: "No"
+        selected-yes-prefix: "&e&l█ &a&l"
+        selected-no-prefix: "&e&l█ &c&l"
+        unselected-prefix: "&e&l▌ &7"
+      lore:
+        - "%description%"
+        - ""
+        - "%status_yes%"
+        - "%status_no%"
+        - ""
+        - "&eClick to change!"
       messages:
-        enabled: "&aSpectators enabled"
-        disabled: "&cSpectators disabled"
+        enabled: "profile.settings.spectators.enabled"
+        disabled: "profile.settings.spectators.disabled"
+
+    view-players:
+      material: PLAYER_HEAD
+      enabled-name: "&6&lPlayer Visibility"
+      disabled-name: "&6&lPlayer Visibility"
+      description: "&7Show or hide players in the lobby."
+      placeholders:
+        yes: "Yes"
+        no: "No"
+        selected-yes-prefix: "&e&l█ &a&l"
+        selected-no-prefix: "&e&l█ &c&l"
+        unselected-prefix: "&e&l▌ &7"
+      lore:
+        - "%description%"
+        - ""
+        - "%status_yes%"
+        - "%status_no%"
+        - ""
+        - "&eClick to change!"
+      messages:
+        enabled: "profile.settings.view-players.enabled"
+        disabled: "profile.settings.view-players.disabled"
+
+    event-messages:
+      material: PAPER
+      enabled-name: "&6&lEvent Messages"
+      disabled-name: "&6&lEvent Messages"
+      description: "&7Receive broadcast event notifications."
+      placeholders:
+        yes: "Yes"
+        no: "No"
+        selected-yes-prefix: "&e&l█ &a&l"
+        selected-no-prefix: "&e&l█ &c&l"
+        unselected-prefix: "&e&l▌ &7"
+      lore:
+        - "%description%"
+        - ""
+        - "%status_yes%"
+        - "%status_no%"
+        - ""
+        - "&eClick to change!"
+      messages:
+        enabled: "profile.settings.event-messages.enabled"
+        disabled: "profile.settings.event-messages.disabled"
+
+    kit-mode:
+      material: CHEST
+      enabled-name: "&6&lKit Mode"
+      disabled-name: "&6&lKit Mode"
+      description: "&7Automatically equip your saved kit layouts."
+      placeholders:
+        yes: "Yes"
+        no: "No"
+        selected-yes-prefix: "&e&l█ &a&l"
+        selected-no-prefix: "&e&l█ &c&l"
+        unselected-prefix: "&e&l▌ &7"
+      lore:
+        - "%description%"
+        - ""
+        - "%status_yes%"
+        - "%status_no%"
+        - ""
+        - "&eClick to change!"
+      messages:
+        enabled: "profile.settings.kit-mode.enabled"
+        disabled: "profile.settings.kit-mode.disabled"
+
+    ping-matchmaking:
+      material-enabled: COMPASS
+      material-disabled: REDSTONE_COMPARATOR
+      enabled-name: "&6&lPing Matchmaking"
+      disabled-name: "&6&lPing Matchmaking"
+      description: "&7Limit matchmaking by your preferred ping."
+      placeholders:
+        yes: "Yes"
+        no: "No"
+        selected-yes-prefix: "&e&l█ &a&l"
+        selected-no-prefix: "&e&l█ &c&l"
+        unselected-prefix: "&e&l▌ &7"
+      lore:
+        - "%description%"
+        - ""
+        - "%status_yes%"
+        - "%status_no%"
+        - ""
+        - "&eClick to change!"
+        - "&7Right-click to configure range."
+      messages:
+        enabled: "profile.settings.ping-matchmaking.enabled"
+        disabled: "profile.settings.ping-matchmaking.disabled"
+
+    lobby-time:
+      material: CLOCK
+      name: "&6&lLobby Time"
+      description: "&7Select the lobby time of day."
+      states:
+        day: "&aDay"
+        afternoon: "&6Afternoon"
+        night: "&dNight"
+      lore:
+        - "%description%"
+        - ""
+        - "&7Time: %status%"
+        - ""
+        - "&eClick to change!"
+      messages:
+        updated: "profile.settings.lobby-time.updated"
+
+    pagination-previous:
+      position: 18
+      material: ARROW
+      name: "&ePrevious Page"
+      lore:
+        - "&7Go back to &fPage {target-page}"
+
+    pagination-next:
+      position: 26
+      material: ARROW
+      name: "&eNext Page"
+      lore:
+        - "&7Go to &fPage {target-page}"
 
 friends:
   title: "&a☻ Friends"
@@ -238,10 +330,9 @@ friend-options:
         - "&7Return to your friends list."
 
 ping-matchmaking:
-  title: "&ePing Matchmaking Settings"
+  title: "&6&lPing Matchmaking Settings"
   size: 27
   items:
-    # Min Ping Display
     min-ping-display:
       position: 4
       material: EMERALD
@@ -253,7 +344,6 @@ ping-matchmaking:
         - ""
         - "&eUse the buttons below"
 
-    # Min Ping Controls
     min-ping-decrease-10:
       position: 1
       material: RED_WOOL
@@ -282,7 +372,6 @@ ping-matchmaking:
       lore:
         - "&7Click to increase"
 
-    # Max Ping Display
     max-ping-display:
       position: 13
       material: REDSTONE
@@ -294,7 +383,6 @@ ping-matchmaking:
         - ""
         - "&eUse the buttons below"
 
-    # Max Ping Controls
     max-ping-decrease-10:
       position: 10
       material: RED_WOOL
@@ -323,7 +411,6 @@ ping-matchmaking:
       lore:
         - "&7Click to increase"
 
-    # Back Button
     back:
       position: 18
       material: BARRIER
@@ -331,7 +418,6 @@ ping-matchmaking:
       lore:
         - "&7Back to settings menu"
 
-    # Presets
     preset-low:
       position: 24
       material: GOLD_INGOT
@@ -366,8 +452,8 @@ ping-matchmaking:
         applied: "&aPreset applied: &fUnlimited"
 
 kit-selector:
-  title: "&6Kit Selection"
-  size: 54
+  title: "&6&lKit Selection"
+  size: 27
   items:
     info:
       position: 4
@@ -403,22 +489,22 @@ queue:
 
 unranked-kits:
   title: "&eUnranked - Select Kit"
-  size: 54
+  size: 27
   items: {}
 
 ranked-kits:
   title: "&cRanked - Select Kit"
-  size: 54
+  size: 27
   items: {}
 
 duel-kit:
   title: "&6Duel - Select Kit"
-  size: 54
+  size: 27
   items: {}
 
 duel-arena:
   title: "&6Duel - Select Arena"
-  size: 54
+  size: 27
   items: {}
 
 duel-rounds:
@@ -457,16 +543,16 @@ ffa:
 
 ffa-kit:
   title: "&6FFA - Select Kit"
-  size: 54
+  size: 27
   items: {}
 
 ffa-arena:
   title: "&6FFA - Select Arena"
-  size: 54
+  size: 27
   items: {}
 
 unranked:
-  title: "&eUnranked Match Types"
+  title: "&6&lUnranked Match Types"
   size: 27
   items:
     duel:
@@ -516,7 +602,7 @@ unranked:
         - "&eClick to select kit"
 
 ranked:
-  title: "&cRanked Match Types"
+  title: "&6&lRanked Match Types"
   size: 27
   items:
     duel:
@@ -566,8 +652,8 @@ ranked:
         - "&eClick to select kit"
 
 kit-selection:
-  title: "&6Kit Selection"
-  size: 54
+  title: "&6&lKit Selection"
+  size: 27
   items:
     info:
       position: 4
@@ -579,8 +665,8 @@ kit-selection:
         - "&fAvailable Kits&7: {count}"
 
 kit-layout-selector:
-  title: "&eSelect Kit to Edit Layout"
-  size: 54
+  title: "&6&lSelect Kit to Edit Layout"
+  size: 27
   kit-name-format: "&e{kit}"
   kit-lore:
     - "&7Click to edit this kit's layout"
@@ -588,11 +674,11 @@ kit-layout-selector:
     - "&eCustomize your item arrangement!"
 
 kit-layout-editor:
-  title: "&eKit Layout Editor"
-  size: 9
+  title: "&6&lKit Layout Editor"
+  size: 27
   items:
     save:
-      position: 1
+      position: 10
       material: LIME_WOOL
       name: "&aSave Layout"
       lore:
@@ -601,7 +687,7 @@ kit-layout-editor:
         - ""
         - "&eClick to save!"
     back:
-      position: 4
+      position: 13
       material: ARROW
       name: "&cBack"
       lore:
@@ -610,7 +696,7 @@ kit-layout-editor:
         - ""
         - "&eClick to go back!"
     reset:
-      position: 7
+      position: 16
       material: YELLOW_WOOL
       name: "&eReset to Default"
       lore:
@@ -626,7 +712,6 @@ kit-layout-editor:
     reset: "&eLayout restored to default."
     back: "&7Returning to kit selector..."
 
-# Profile loading messages
 profile:
   loading-title: "&eLoading Profile..."
   loading-message: "&7Please wait while we load your data"
