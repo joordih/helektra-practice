@@ -30,5 +30,19 @@ public interface IFriendService {
     IFriend.Status status
   );
 
+  CompletableFuture<Void> sendFriendRequest(UUID senderId, UUID receiverId, String receiverName);
+
+  CompletableFuture<Void> acceptFriendRequest(UUID receiverId, UUID senderId);
+
+  CompletableFuture<Void> denyFriendRequest(UUID receiverId, UUID senderId);
+
+  CompletableFuture<Void> cancelFriendRequest(UUID senderId, UUID receiverId);
+
+  CompletableFuture<List<IFriend>> getIncomingRequests(UUID playerId);
+
+  CompletableFuture<List<IFriend>> getOutgoingRequests(UUID playerId);
+
+  CompletableFuture<List<IFriend>> getAcceptedFriends(UUID playerId);
+
   void clearCache();
 }

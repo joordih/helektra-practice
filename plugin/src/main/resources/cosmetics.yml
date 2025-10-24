@@ -1,0 +1,84 @@
+categories:
+  rod-trails:
+    type: ROD_TRAIL
+    display-name: "&b&lRod Trails"
+    icon-material: FISHING_ROD
+    items:
+      flame:
+        display-name: "&c&lFlame Trail"
+        icon-material: BLAZE_POWDER
+        particle-effect: FLAME
+        color: "#FF6B35"
+        enabled: true
+      hearts:
+        display-name: "&d&lLove Trail"
+        icon-material: RED_DYE
+        particle-effect: HEART
+        color: "#FF69B4"
+        enabled: true
+      enchant:
+        display-name: "&5&lEnchanted Trail"
+        icon-material: ENCHANTED_BOOK
+        particle-effect: ENCHANT
+        color: "#8B5CF6"
+        enabled: true
+      water:
+        display-name: "&9&lWater Trail"
+        icon-material: WATER_BUCKET
+        particle-effect: WATER_SPLASH
+        color: "#3B82F6"
+        enabled: true
+      smoke:
+        display-name: "&7&lSmoke Trail"
+        icon-material: COAL
+        particle-effect: SMOKE
+        color: "#6B7280"
+        enabled: true
+      note:
+        display-name: "&e&lMusical Trail"
+        icon-material: NOTE_BLOCK
+        particle-effect: NOTE
+        color: "#FCD34D"
+        enabled: true
+
+  arrow-trails:
+    type: ARROW_TRAIL
+    display-name: "&e&lArrow Trails"
+    icon-material: ARROW
+    items:
+      critical:
+        display-name: "&6&lCritical Trail"
+        icon-material: GOLD_INGOT
+        particle-effect: CRIT
+        color: "#F59E0B"
+        enabled: true
+      magic:
+        display-name: "&d&lMagic Trail"
+        icon-material: MAGMA_CREAM
+        particle-effect: WITCH_MAGIC
+        color: "#D946EF"
+        enabled: true
+      redstone:
+        display-name: "&c&lRedstone Trail"
+        icon-material: REDSTONE
+        particle-effect: REDSTONE
+        color: "#DC2626"
+        enabled: true
+      cloud:
+        display-name: "&f&lCloud Trail"
+        icon-material: GHAST_TEAR
+        particle-effect: CLOUD
+        color: "#F3F4F6"
+        enabled: true
+      slime:
+        display-name: "&a&lSlime Trail"
+        icon-material: SLIME_BALL
+        particle-effect: SLIME
+        color: "#10B981"
+        enabled: true
+      dragon:
+        display-name: "&5&lDragon Trail"
+        icon-material: DRAGON_EGG
+        particle-effect: DRAGON_BREATH
+        color: "#A855F7"
+        enabled: true

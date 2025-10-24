@@ -52,6 +52,20 @@ friends:
       already: "&cYou already have a pending friend addition."
       cancelled: "&cFriend invitation cancelled."
       retry: "&cUnable to add that friend. Type another name or /friend add <player>."
+  request:
+    self: "&cYou cannot send a friend request to yourself."
+    not-found: "&cPlayer {player} could not be found."
+    already-friends: "&cYou are already friends with {player}."
+    already-sent: "&cYou have already sent a friend request to {player}."
+    sent: "&aFriend request sent to {player}."
+    received: "&e{player} has sent you a friend request. Check your friend requests menu!"
+    accepted: "&aYou accepted the friend request from {player}."
+    accepted-notify: "&a{player} accepted your friend request!"
+    denied: "&cYou denied the friend request from {player}."
+    canceled: "&cYou canceled your friend request to {player}."
+    not-found-accept: "&cNo friend request found to accept."
+    not-found-deny: "&cNo friend request found to deny."
+    not-found-cancel: "&cNo friend request found to cancel."
 
 profile:
   loading: "&eLoading your profile..."
@@ -82,6 +96,11 @@ profile:
       disabled: "&cPing matchmaking disabled."
     lobby-time:
       updated: "&aLobby time set to &e{time}&a."
+
+cosmetics:
+  selected: "&aYou have selected {cosmetic}&a!"
+  disabled: "&cCosmetic effects disabled."
+  error: "&cAn error occurred while loading cosmetics."
 
 kit:
   hover:

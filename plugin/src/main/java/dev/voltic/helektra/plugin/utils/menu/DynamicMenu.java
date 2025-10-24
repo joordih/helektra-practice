@@ -1,15 +1,5 @@
 package dev.voltic.helektra.plugin.utils.menu;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.ItemStack;
-
 import dev.voltic.helektra.plugin.utils.MenuConfigHelper;
 import dev.voltic.helektra.plugin.utils.MenuConfigHelper.MenuItemConfig;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
@@ -17,287 +7,338 @@ import dev.voltic.helektra.plugin.utils.sound.MenuSoundUtils;
 import fr.mrmicky.fastinv.FastInv;
 import fr.mrmicky.fastinv.ItemBuilder;
 import fr.mrmicky.fastinv.PaginatedFastInv;
-import java.lang.reflect.Field;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+@Getter
+@Setter
+@RequiredArgsConstructor
 public class DynamicMenu implements ConfigurableMenu {
 
-  private final MenuConfigHelper config;
-  private final String path;
-  private final boolean paginated;
-  private final FastInv menu;
-  private final List<Integer> contentSlots;
-  private int currentPageIndex = 0;
+  private final MenuConfigHelper menuConfigHelper;
+  private final String menuPath;
+  private final boolean paginatedMenu;
+  private final FastInv fastInventory;
+  private final List<Integer> contentSlots = new ArrayList<>();
+  private final List<Integer> borderSlots = new ArrayList<>();
+  private int lastKnownPageIndex = 0;
   private boolean hasCompletedInitialRender = false;
 
-  public DynamicMenu(MenuConfigHelper config, String path) {
-    this.config = config;
-    this.path = path;
-    this.paginated = config.isPaginated(path);
-    this.contentSlots = config.getContentSlots(path);
-    this.menu = createMenu();
+  public DynamicMenu(MenuConfigHelper menuConfigHelper, String menuPath) {
+    this.menuConfigHelper = menuConfigHelper;
+    this.menuPath = menuPath;
+    this.paginatedMenu = menuConfigHelper.isPaginated(menuPath);
+    this.fastInventory = createInventory();
+    initializeSlotLayout();
   }
 
-  private FastInv createMenu() {
-    String title = config.getMenuTitle(path);
-    int size = config.getMenuSize(path);
-    return paginated ? new PaginatedFastInv(size, title) : new FastInv(size, title);
+  private FastInv createInventory() {
+    String title = menuConfigHelper.getMenuTitle(menuPath);
+    int size = menuConfigHelper.getMenuSize(menuPath);
+    return paginatedMenu ? new PaginatedFastInv(size, title) : new FastInv(size, title);
+  }
+
+  private void initializeSlotLayout() {
+    List<Integer> configuredSlots = new ArrayList<>(menuConfigHelper.getContentSlots(menuPath));
+    boolean useAutomaticBorders = menuConfigHelper.getBoolean(menuPath + ".content.auto-borders", false);
+    if (useAutomaticBorders) {
+      borderSlots.addAll(calculateBorderSlots(fastInventory.getInventory().getSize()));
+      configuredSlots.removeAll(borderSlots);
+    }
+    contentSlots.addAll(configuredSlots);
   }
 
   @Override
   public void setup(Player player) {
-    Map<String, MenuItemConfig> items = loadItems();
-    List<MenuItemConfig> dynamicItems = new ArrayList<>();
+    Map<String, MenuItemConfig> configuredItems = loadConfiguredItems();
 
-    if (config.contains(path + ".content.start-slot") && config.contains(path + ".content.end-slot")) {
-      int start = config.getInt(path + ".content.start-slot", 10);
-      int end = config.getInt(path + ".content.end-slot", 16);
-      contentSlots.clear();
-      contentSlots.addAll(IntStream.rangeClosed(start, end).boxed().collect(Collectors.toList()));
-    }
+    List<Map.Entry<String, MenuItemConfig>> dynamicEntries = configuredItems.entrySet().stream()
+      .filter(entry -> entry.getValue().exists())
+      .filter(entry -> !entry.getKey().equalsIgnoreCase("filler"))
+      .filter(entry -> !entry.getKey().equalsIgnoreCase("pagination-previous"))
+      .filter(entry -> !entry.getKey().equalsIgnoreCase("pagination-next"))
+      .collect(Collectors.toList());
 
-    for (var entry : items.entrySet()) {
-      String key = entry.getKey();
-      MenuItemConfig item = entry.getValue();
-
-      if (!item.exists() || "filler".equalsIgnoreCase(key))
-        continue;
-
-      if (item.hasExplicitSlot() && (contentSlots.isEmpty() || !contentSlots.contains(item.getPrimarySlot()))) {
-        setItem(item.getPrimarySlot(), item, player);
-        continue;
-      }
-
-      dynamicItems.add(item);
-    }
-
-    if (paginated && menu instanceof PaginatedFastInv paginatedMenu) {
-
+    if (paginatedMenu && fastInventory instanceof PaginatedFastInv paginatedInventory) {
       if (!contentSlots.isEmpty()) {
-        paginatedMenu.setContentSlots(contentSlots);
+        paginatedInventory.setContentSlots(contentSlots);
       }
 
-      for (MenuItemConfig item : dynamicItems) {
-        paginatedMenu.addContent(buildItem(item), e -> handleClick(player, item, e));
+      for (Map.Entry<String, MenuItemConfig> entry : dynamicEntries) {
+        MenuItemConfig itemConfig = entry.getValue();
+        paginatedInventory.addContent(buildItemFromConfig(itemConfig), click -> handleItemClick(player, itemConfig, click));
       }
 
-      MenuItemConfig previous = items.get("pagination-previous");
-      MenuItemConfig next = items.get("pagination-next");
-
-      if (previous != null && previous.exists()) {
-        paginatedMenu.setItem(previous.getPrimarySlot(), buildItem(previous), e -> {
-          e.setCancelled(true);
-          paginatedMenu.openPrevious();
-          applyFiller(items);
-        });
-      }
-
-      if (next != null && next.exists()) {
-        paginatedMenu.setItem(next.getPrimarySlot(), buildItem(next), e -> {
-          e.setCancelled(true);
-          paginatedMenu.openNext();
-          applyFiller(items);
-        });
-      }
-
+      updatePaginationItems(paginatedInventory, configuredItems, player);
     } else {
       int index = 0;
-      for (MenuItemConfig item : dynamicItems) {
-        int slot = !contentSlots.isEmpty()
-            ? contentSlots.get(index++ % contentSlots.size())
-            : index++;
-        setItem(slot, item, player);
+      for (Map.Entry<String, MenuItemConfig> entry : dynamicEntries) {
+        MenuItemConfig itemConfig = entry.getValue();
+        int resolvedSlot = !contentSlots.isEmpty()
+          ? contentSlots.get(index++ % contentSlots.size())
+          : index++;
+        fastInventory.setItem(resolvedSlot, buildItemFromConfig(itemConfig), click -> handleItemClick(player, itemConfig, click));
       }
     }
 
-    applyFiller(items);
+    applyFillerFromConfig(configuredItems);
   }
 
-  private void setItem(int slot, MenuItemConfig config, Player player) {
-    menu.setItem(slot, buildItem(config), e -> handleClick(player, config, e));
+  private List<Integer> calculateBorderSlots(int inventorySize) {
+    int columns = 9;
+    int rows = inventorySize / columns;
+    List<Integer> slots = new ArrayList<>();
+    for (int slot = 0; slot < inventorySize; slot++) {
+      int row = slot / columns;
+      int col = slot % columns;
+      if (row == 0 || row == rows - 1 || col == 0 || col == columns - 1) {
+        slots.add(slot);
+      }
+    }
+    return slots;
   }
 
-  private void handleClick(Player player, MenuItemConfig config, InventoryClickEvent e) {
-    e.setCancelled(true);
-    MenuSoundUtils.playItemSound(player, config, path);
+  private void handleItemClick(Player player, MenuItemConfig itemConfig, InventoryClickEvent clickEvent) {
+    clickEvent.setCancelled(true);
+    MenuSoundUtils.playItemSound(player, itemConfig, menuPath);
 
-    String command = config.getRawString("command", "");
-    if (!command.isBlank()) {
+    String configuredCommand = itemConfig.getRawString("command", "");
+    if (!configuredCommand.isBlank()) {
       player.closeInventory();
-      player.performCommand(command.replace("{player}", player.getName()));
+      player.performCommand(configuredCommand.replace("{player}", player.getName()));
       return;
     }
 
-    String messageKey = config.getRawString("message", "");
-    if (!messageKey.isBlank()) {
-      player.sendMessage(TranslationUtils.translate(messageKey));
+    String configuredMessageKey = itemConfig.getRawString("message", "");
+    if (!configuredMessageKey.isBlank()) {
+      player.sendMessage(TranslationUtils.translate(configuredMessageKey));
     }
   }
 
-  private ItemStack buildItem(MenuItemConfig config) {
-    return new ItemBuilder(config.getMaterial())
-        .name(config.getName())
-        .lore(config.getLore())
-        .build();
+  private ItemStack buildItemFromConfig(MenuItemConfig itemConfig) {
+    return new ItemBuilder(itemConfig.getMaterial())
+      .name(itemConfig.getName())
+      .lore(itemConfig.getLore())
+      .build();
   }
 
-  private void applyFiller(Map<String, MenuItemConfig> items) {
-    MenuItemConfig filler = items.get("filler");
-    if (filler == null || !filler.exists())
-      return;
+  private void updatePaginationItems(PaginatedFastInv paginatedInventory, Map<String, MenuItemConfig> configuredItems, Player player) {
+    MenuItemConfig previousItemConfig = configuredItems.get("pagination-previous");
+    MenuItemConfig nextItemConfig = configuredItems.get("pagination-next");
 
-    ItemStack item = new ItemBuilder(filler.getMaterial())
-        .name(filler.getName())
-        .lore(filler.getLore())
-        .build();
+    int currentPage = getCurrentPageSafe(paginatedInventory);
+    int maxPage = getLastPageSafe(paginatedInventory);
+    int targetNextPage = Math.min(currentPage + 1, maxPage);
+    int targetPreviousPage = Math.max(currentPage - 1, 1);
 
-    int size = menu.getInventory().getSize();
-    for (int i = 0; i < size; i++) {
-      if (menu.getInventory().getItem(i) == null &&
-          (contentSlots.isEmpty() || !contentSlots.contains(i))) {
-        menu.setItem(i, item, e -> e.setCancelled(true));
+    if (previousItemConfig != null && previousItemConfig.exists()) {
+      if (currentPage > 1) {
+        Map<String, String> previousPlaceholders = buildPagePlaceholders(currentPage, maxPage, targetNextPage, targetPreviousPage, targetPreviousPage);
+        ItemStack previousItem = buildItemWithPagePlaceholders(previousItemConfig, previousPlaceholders);
+        paginatedInventory.setItem(previousItemConfig.getPrimarySlot(), previousItem, click -> {
+          click.setCancelled(true);
+          paginatedInventory.openPrevious();
+          trackPageChange();
+          updatePaginationItems(paginatedInventory, configuredItems, player);
+        });
+      } else {
+        paginatedInventory.removeItem(previousItemConfig.getPrimarySlot());
+      }
+    }
+
+    if (nextItemConfig != null && nextItemConfig.exists()) {
+      if (currentPage < maxPage) {
+        Map<String, String> nextPlaceholders = buildPagePlaceholders(currentPage, maxPage, targetNextPage, targetPreviousPage, targetNextPage);
+        ItemStack nextItem = buildItemWithPagePlaceholders(nextItemConfig, nextPlaceholders);
+        paginatedInventory.setItem(nextItemConfig.getPrimarySlot(), nextItem, click -> {
+          click.setCancelled(true);
+          paginatedInventory.openNext();
+          trackPageChange();
+          updatePaginationItems(paginatedInventory, configuredItems, player);
+        });
+      } else {
+        paginatedInventory.removeItem(nextItemConfig.getPrimarySlot());
       }
     }
   }
 
-  private Map<String, MenuItemConfig> loadItems() {
-    return config.getItemKeys(path).stream()
-        .collect(Collectors.toMap(k -> k, k -> config.getItemConfig(path, k)));
+  private Map<String, String> buildPagePlaceholders(int currentPage, int maxPage, int nextPage, int previousPage, int targetPage) {
+    return Map.of(
+      "page", String.valueOf(currentPage),
+      "max-page", String.valueOf(maxPage),
+      "next-page", String.valueOf(nextPage),
+      "previous-page", String.valueOf(previousPage),
+      "target-page", String.valueOf(targetPage)
+    );
+  }
+
+  private ItemStack buildItemWithPagePlaceholders(MenuItemConfig itemConfig, Map<String, String> placeholders) {
+    String resolvedName = replaceRawPlaceholders(itemConfig.getName(), placeholders);
+    List<String> resolvedLore = itemConfig.getLore().stream()
+      .map(line -> replaceRawPlaceholders(line, placeholders))
+      .collect(Collectors.toList());
+
+    return new ItemBuilder(itemConfig.getMaterial())
+      .name(resolvedName)
+      .lore(resolvedLore)
+      .build();
+  }
+
+  private String replaceRawPlaceholders(String text, Map<String, String> placeholders) {
+    String output = text;
+    for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+      output = output.replace("{" + entry.getKey() + "}", entry.getValue());
+    }
+    return output;
+  }
+
+  private void applyFillerFromConfig(Map<String, MenuItemConfig> configuredItems) {
+    MenuItemConfig fillerItemConfig = configuredItems.get("filler");
+    if (fillerItemConfig == null || !fillerItemConfig.exists()) {
+      return;
+    }
+    fillFiller(fillerItemConfig);
+  }
+
+  public void fillFiller(MenuItemConfig fillerItemConfig) {
+    ItemStack fillerItemStack = new ItemBuilder(fillerItemConfig.getMaterial())
+      .name(fillerItemConfig.getName())
+      .lore(fillerItemConfig.getLore())
+      .build();
+
+    int size = getInventorySize();
+
+    for (int slot = 0; slot < size; slot++) {
+      boolean isContentSlot = !contentSlots.isEmpty() && contentSlots.contains(slot);
+      boolean isOccupied = fastInventory.getInventory().getItem(slot) != null;
+      if (!isOccupied && !isContentSlot) {
+        fastInventory.setItem(slot, fillerItemStack, click -> click.setCancelled(true));
+      }
+    }
+
+    for (int borderSlot : borderSlots) {
+      if (borderSlot >= 0 && borderSlot < size && fastInventory.getInventory().getItem(borderSlot) == null) {
+        fastInventory.setItem(borderSlot, fillerItemStack, click -> click.setCancelled(true));
+      }
+    }
+  }
+
+  private Map<String, MenuItemConfig> loadConfiguredItems() {
+    return menuConfigHelper.getItemKeys(menuPath)
+      .stream()
+      .collect(Collectors.toMap(key -> key, key -> menuConfigHelper.getItemConfig(menuPath, key)));
+  }
+
+  public Map<String, MenuItemConfig> getAllItemConfigs() {
+    return loadConfiguredItems();
   }
 
   public void open(Player player) {
-    menu.open(player);
-    MenuSoundUtils.playOpenSound(player, path);
+    fastInventory.open(player);
+    MenuSoundUtils.playOpenSound(player, menuPath);
   }
 
   public void clear() {
     if (hasCompletedInitialRender) {
       preserveCurrentPage();
     }
-    if (paginated && menu instanceof PaginatedFastInv paginatedMenu) {
-      paginatedMenu.clearContent();
-      resetPaginationToFirstPage(paginatedMenu);
+
+    if (paginatedMenu && fastInventory instanceof PaginatedFastInv paginatedInventory) {
+      paginatedInventory.clearContent();
+      resetPaginationInternalPageIndex(paginatedInventory);
     }
-    menu.getInventory().clear();
+
+    fastInventory.getInventory().clear();
   }
 
-  private void resetPaginationToFirstPage(PaginatedFastInv paginatedMenu) {
+  private void resetPaginationInternalPageIndex(PaginatedFastInv paginatedInventory) {
     try {
       Field pageField = PaginatedFastInv.class.getDeclaredField("page");
       pageField.setAccessible(true);
-      pageField.set(paginatedMenu, 0);
+      pageField.set(paginatedInventory, 1);
     } catch (Exception ignored) {
     }
   }
 
   private void preserveCurrentPage() {
-    if (paginated && menu instanceof PaginatedFastInv paginatedMenu) {
+    if (paginatedMenu && fastInventory instanceof PaginatedFastInv paginatedInventory) {
       try {
-        Field pageField = PaginatedFastInv.class.getDeclaredField("page");
-        pageField.setAccessible(true);
-        currentPageIndex = (int) pageField.get(paginatedMenu);
+        lastKnownPageIndex = paginatedInventory.currentPage();
       } catch (Exception ignored) {
-        currentPageIndex = 0;
+        lastKnownPageIndex = 1;
       }
     }
   }
 
   protected void restorePageAfterRefresh() {
-    if (!paginated || !(menu instanceof PaginatedFastInv paginatedMenu)) return;
-    if (currentPageIndex <= 0) return;
-    
-    for (int i = 0; i < currentPageIndex; i++) {
-      paginatedMenu.openNext();
-    }
-  }
-
-  public int getSize() {
-    return menu.getInventory().getSize();
-  }
-
-  public void setStaticItem(MenuItemConfig config, ItemStack item, Player player) {
-    int slot = config.getPrimarySlot();
-    if (slot < 0 || slot >= getSize())
+    if (!paginatedMenu || !(fastInventory instanceof PaginatedFastInv paginatedInventory)) {
       return;
-    menu.setItem(slot, item, e -> handleClick(player, config, e));
+    }
+    int maxPage = getLastPageSafe(paginatedInventory);
+    int pageToOpen = Math.min(Math.max(lastKnownPageIndex, 1), maxPage);
+    paginatedInventory.openPage(pageToOpen);
   }
 
-  public void addDynamicItem(MenuItemConfig config, ItemStack item, Player player) {
-    if (paginated && menu instanceof PaginatedFastInv paginatedMenu) {
-      paginatedMenu.addContent(item, e -> handleClick(player, config, e));
+  public int getInventorySize() {
+    return fastInventory.getInventory().getSize();
+  }
+
+  public void setStaticItemWithHandler(int slotIndex, ItemStack itemStack, Consumer<InventoryClickEvent> clickHandler) {
+    if (slotIndex < 0 || slotIndex >= getInventorySize()) {
+      return;
+    }
+    fastInventory.setItem(slotIndex, itemStack, clickHandler::accept);
+  }
+
+  public void addDynamicItemWithHandler(ItemStack itemStack, Consumer<InventoryClickEvent> clickHandler) {
+    if (paginatedMenu && fastInventory instanceof PaginatedFastInv paginatedInventory) {
+      paginatedInventory.addContent(itemStack, clickHandler::accept);
     } else {
-      int nextSlot = findNextAvailableContentSlot();
-      if (nextSlot != -1) {
-        menu.setItem(nextSlot, item, e -> handleClick(player, config, e));
+      int freeSlot = findNextAvailableContentSlot();
+      if (freeSlot != -1) {
+        fastInventory.setItem(freeSlot, itemStack, clickHandler::accept);
       }
     }
   }
 
   private int findNextAvailableContentSlot() {
-    if (contentSlots.isEmpty())
+    if (contentSlots.isEmpty()) {
       return -1;
+    }
     for (int slot : contentSlots) {
-      if (menu.getInventory().getItem(slot) == null) {
+      if (fastInventory.getInventory().getItem(slot) == null) {
         return slot;
       }
     }
     return -1;
   }
 
-  public void openMenu(Player player) {
-    open(player);
-  }
-
-  public void fillFiller(MenuItemConfig filler) {
-    if (filler == null || !filler.exists())
+  public void initializePagination() {
+    if (!paginatedMenu || !(fastInventory instanceof PaginatedFastInv paginatedInventory)) {
       return;
-    ItemStack item = new ItemBuilder(filler.getMaterial())
-        .name(filler.getName())
-        .lore(filler.getLore())
-        .build();
-    for (int i = 0; i < getSize(); i++) {
-      if (menu.getInventory().getItem(i) == null && (contentSlots.isEmpty() || !contentSlots.contains(i))) {
-        menu.setItem(i, item, e -> e.setCancelled(true));
-      }
     }
-  }
-
-  public Map<String, MenuItemConfig> getAllItemConfigs() {
-    return loadItems();
-  }
-
-  protected void setStaticItemWithHandler(int slot, ItemStack item, java.util.function.Consumer<InventoryClickEvent> handler) {
-    if (slot < 0 || slot >= getSize()) return;
-    menu.setItem(slot, item, handler::accept);
-  }
-
-  protected void addDynamicItemWithHandler(ItemStack item, java.util.function.Consumer<InventoryClickEvent> handler) {
-    if (paginated && menu instanceof PaginatedFastInv paginatedMenu) {
-      paginatedMenu.addContent(item, handler::accept);
-    } else {
-      int nextSlot = findNextAvailableContentSlot();
-      if (nextSlot != -1) {
-        menu.setItem(nextSlot, item, handler::accept);
-      }
-    }
-  }
-
-  protected FastInv getMenu() {
-    return menu;
-  }
-
-  protected void initializePagination() {
-    if (!paginated || !(menu instanceof PaginatedFastInv paginatedMenu)) return;
     if (!contentSlots.isEmpty()) {
-      paginatedMenu.setContentSlots(contentSlots);
+      paginatedInventory.setContentSlots(contentSlots);
     }
   }
 
-  protected boolean isPaginated() {
-    return paginated;
-  }
-
-  protected List<Integer> getContentSlots() {
-    return contentSlots;
+  public void setupPaginationItems(Player player) {
+    if (!paginatedMenu || !(fastInventory instanceof PaginatedFastInv paginatedInventory)) {
+      return;
+    }
+    updatePaginationItems(paginatedInventory, getAllItemConfigs(), player);
+    applyFillerFromConfig(getAllItemConfigs());
   }
 
   protected void completeRefresh() {
@@ -309,5 +350,21 @@ public class DynamicMenu implements ConfigurableMenu {
 
   protected void trackPageChange() {
     preserveCurrentPage();
+  }
+
+  private int getCurrentPageSafe(PaginatedFastInv paginatedInventory) {
+    try {
+      return paginatedInventory.currentPage();
+    } catch (Exception ignored) {
+      return 1;
+    }
+  }
+
+  private int getLastPageSafe(PaginatedFastInv paginatedInventory) {
+    try {
+      return Math.max(paginatedInventory.lastPage(), 1);
+    } catch (Exception ignored) {
+      return 1;
+    }
   }
 }

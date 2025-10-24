@@ -18,16 +18,13 @@ public class MenuFactory {
     this.injector = injector;
   }
 
-  public void openMenu(Class<?> menuClass, Player player) {
+  public void openMenu(Class<? extends ConfigurableMenu> menuClass, Player player) {
     try {
-      Object instance = injector.getInstance(menuClass);
-
-      if (instance instanceof ConfigurableMenu configurable) {
-        configurable.setup(player);
-      }
+      ConfigurableMenu instance = injector.getInstance(menuClass);
+      instance.setup(player);
 
       if (instance instanceof DynamicMenu dynamicMenu) {
-        dynamicMenu.openMenu(player);
+        dynamicMenu.open(player);
       } else if (instance instanceof FastInv fastInv) {
         fastInv.open(player);
       } else {

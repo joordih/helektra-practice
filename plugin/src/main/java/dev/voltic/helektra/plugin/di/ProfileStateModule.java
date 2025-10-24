@@ -7,6 +7,7 @@ import dev.voltic.helektra.plugin.model.profile.hotbar.HotbarActionExecutor;
 import dev.voltic.helektra.plugin.model.profile.hotbar.HotbarItemFactory;
 import dev.voltic.helektra.plugin.model.profile.hotbar.ProfileHotbarLayoutRepository;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.HotbarAction;
+import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.CosmeticsAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.FriendsAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.JoinQueueAction;
 import dev.voltic.helektra.plugin.model.profile.hotbar.actions.impl.KitEditorAction;
@@ -65,6 +66,7 @@ public class ProfileStateModule extends AbstractModule {
     bindAction(actionBinder, KitLayoutAction.class);
     bindAction(actionBinder, SettingsAction.class);
     bindAction(actionBinder, FriendsAction.class);
+    bindAction(actionBinder, CosmeticsAction.class);
   }
 
   private <T> void bindSingleton(Class<T> type) {

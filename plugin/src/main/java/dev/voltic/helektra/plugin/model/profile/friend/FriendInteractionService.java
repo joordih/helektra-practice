@@ -32,7 +32,7 @@ public class FriendInteractionService {
 
   public boolean addFriend(Player player, String targetName) {
     if (player.getName().equalsIgnoreCase(targetName)) {
-      player.sendMessage(TranslationUtils.translate("friends.command.add.self"));
+      player.sendMessage(TranslationUtils.translate("friends.request.self"));
       return false;
     }
 
@@ -46,7 +46,7 @@ public class FriendInteractionService {
     if (targetProfile.isEmpty()) {
       player.sendMessage(
         TranslationUtils.translate(
-          "friends.command.add.not-found",
+          "friends.request.not-found",
           "player",
           targetName
         )
@@ -55,13 +55,13 @@ public class FriendInteractionService {
     }
 
     IProfile target = targetProfile.get();
-    UUID ownerId = player.getUniqueId();
-    UUID targetId = target.getUniqueId();
+    UUID senderId = player.getUniqueId();
+    UUID receiverId = target.getUniqueId();
 
-    if (friendService.areFriends(ownerId, targetId).join()) {
+    if (friendService.areFriends(senderId, receiverId).join()) {
       player.sendMessage(
         TranslationUtils.translate(
-          "friends.command.add.already",
+          "friends.request.already-friends",
           "player",
           target.getName()
         )
@@ -69,38 +69,142 @@ public class FriendInteractionService {
       return false;
     }
 
-    Friend friend = new Friend(
-      ownerId + ":" + targetId,
-      target.getName(),
-      IFriend.Status.ACCEPTED
-    );
-    friendService.addFriend(ownerId, friend).join();
+    List<IFriend> outgoingRequests = friendService.getOutgoingRequests(senderId).join();
+    if (outgoingRequests.stream().anyMatch(f -> f.getUniqueId().equals(receiverId))) {
+      player.sendMessage(
+        TranslationUtils.translate(
+          "friends.request.already-sent",
+          "player",
+          target.getName()
+        )
+      );
+      return false;
+    }
 
-    Friend reverse = new Friend(
-      targetId + ":" + ownerId,
-      player.getName(),
-      IFriend.Status.ACCEPTED
-    );
-    friendService.addFriend(targetId, reverse).join();
+    friendService.sendFriendRequest(senderId, receiverId, target.getName()).join();
 
     player.sendMessage(
       TranslationUtils.translate(
-        "friends.command.add.success",
+        "friends.request.sent",
         "player",
         target.getName()
       )
     );
 
-    Player targetPlayer = Bukkit.getPlayer(targetId);
+    Player targetPlayer = Bukkit.getPlayer(receiverId);
     if (targetPlayer != null) {
       targetPlayer.sendMessage(
         TranslationUtils.translate(
-          "friends.command.add.notify",
+          "friends.request.received",
           "player",
           player.getName()
         )
       );
     }
+
+    return true;
+  }
+
+  public boolean acceptFriendRequest(Player player, UUID senderId) {
+    Optional<IProfile> receiverProfile = resolveProfile(player.getUniqueId());
+    if (receiverProfile.isEmpty()) {
+      player.sendMessage(TranslationUtils.translate("profile.error"));
+      return false;
+    }
+
+    List<IFriend> incomingRequests = friendService.getIncomingRequests(player.getUniqueId()).join();
+    Optional<IFriend> requestOpt = incomingRequests.stream()
+      .filter(f -> f.getUniqueId().equals(senderId))
+      .findFirst();
+
+    if (requestOpt.isEmpty()) {
+      player.sendMessage(TranslationUtils.translate("friends.request.not-found-accept"));
+      return false;
+    }
+
+    IFriend request = requestOpt.get();
+    friendService.acceptFriendRequest(player.getUniqueId(), senderId).join();
+
+    player.sendMessage(
+      TranslationUtils.translate(
+        "friends.request.accepted",
+        "player",
+        request.getName()
+      )
+    );
+
+    Player senderPlayer = Bukkit.getPlayer(senderId);
+    if (senderPlayer != null) {
+      senderPlayer.sendMessage(
+        TranslationUtils.translate(
+          "friends.request.accepted-notify",
+          "player",
+          player.getName()
+        )
+      );
+    }
+
+    return true;
+  }
+
+  public boolean denyFriendRequest(Player player, UUID senderId) {
+    Optional<IProfile> receiverProfile = resolveProfile(player.getUniqueId());
+    if (receiverProfile.isEmpty()) {
+      player.sendMessage(TranslationUtils.translate("profile.error"));
+      return false;
+    }
+
+    List<IFriend> incomingRequests = friendService.getIncomingRequests(player.getUniqueId()).join();
+    Optional<IFriend> requestOpt = incomingRequests.stream()
+      .filter(f -> f.getUniqueId().equals(senderId))
+      .findFirst();
+
+    if (requestOpt.isEmpty()) {
+      player.sendMessage(TranslationUtils.translate("friends.request.not-found-deny"));
+      return false;
+    }
+
+    IFriend request = requestOpt.get();
+    friendService.denyFriendRequest(player.getUniqueId(), senderId).join();
+
+    player.sendMessage(
+      TranslationUtils.translate(
+        "friends.request.denied",
+        "player",
+        request.getName()
+      )
+    );
+
+    return true;
+  }
+
+  public boolean cancelFriendRequest(Player player, UUID receiverId) {
+    Optional<IProfile> senderProfile = resolveProfile(player.getUniqueId());
+    if (senderProfile.isEmpty()) {
+      player.sendMessage(TranslationUtils.translate("profile.error"));
+      return false;
+    }
+
+    List<IFriend> outgoingRequests = friendService.getOutgoingRequests(player.getUniqueId()).join();
+    Optional<IFriend> requestOpt = outgoingRequests.stream()
+      .filter(f -> f.getUniqueId().equals(receiverId))
+      .findFirst();
+
+    if (requestOpt.isEmpty()) {
+      player.sendMessage(TranslationUtils.translate("friends.request.not-found-cancel"));
+      return false;
+    }
+
+    IFriend request = requestOpt.get();
+    friendService.cancelFriendRequest(player.getUniqueId(), receiverId).join();
+
+    player.sendMessage(
+      TranslationUtils.translate(
+        "friends.request.canceled",
+        "player",
+        request.getName()
+      )
+    );
 
     return true;
   }

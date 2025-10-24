@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import com.mongodb.client.MongoDatabase;
 import dev.voltic.helektra.api.IHelektraAPI;
 import dev.voltic.helektra.api.model.arena.IArenaService;
+import dev.voltic.helektra.api.model.cosmetic.ICosmeticService;
 import dev.voltic.helektra.api.model.kit.IKitService;
 import dev.voltic.helektra.api.model.match.IMatchService;
 import dev.voltic.helektra.api.model.profile.IFriendService;
@@ -14,6 +15,7 @@ import dev.voltic.helektra.api.repository.RepositoryFactory;
 import dev.voltic.helektra.plugin.api.HelektraAPI;
 import dev.voltic.helektra.plugin.commands.HelektraCommand;
 import dev.voltic.helektra.plugin.di.ArenaModule;
+import dev.voltic.helektra.plugin.di.CosmeticModule;
 import dev.voltic.helektra.plugin.di.FriendModule;
 import dev.voltic.helektra.plugin.di.KitModule;
 import dev.voltic.helektra.plugin.di.MatchModule;
@@ -29,6 +31,9 @@ import dev.voltic.helektra.plugin.model.arena.listeners.ArenaBlockSnapshotListen
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaProtectionListener;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaSelectionListener;
 import dev.voltic.helektra.plugin.model.arena.listeners.ArenaWorldListener;
+import dev.voltic.helektra.plugin.model.cosmetic.commands.CosmeticsCommand;
+import dev.voltic.helektra.plugin.model.cosmetic.listener.ArrowTrailListener;
+import dev.voltic.helektra.plugin.model.cosmetic.listener.RodTrailListener;
 import dev.voltic.helektra.plugin.model.kit.commands.KitCommand;
 import dev.voltic.helektra.plugin.model.kit.layout.commands.LayoutCommand;
 import dev.voltic.helektra.plugin.model.match.MatchServiceImpl;
@@ -90,6 +95,7 @@ public final class Helektra extends JavaPlugin {
   private IFriendService friendService;
   private IScoreboardService scoreboardService;
   private IMatchService matchService;
+  private ICosmeticService cosmeticService;
   private MenuFactory menuFactory;
   private BukkitAudiences adventure;
   private ScoreboardUpdater scoreboardUpdater;
@@ -167,6 +173,7 @@ public final class Helektra extends JavaPlugin {
       new ScoreboardModule(),
       new MatchModule(settingsConfig),
       new PlayerKitLayoutModule(),
+      new CosmeticModule(),
       binder -> {
         binder.bind(Helektra.class).toInstance(this);
         binder.bind(JavaPlugin.class).toInstance(this);
@@ -182,12 +189,15 @@ public final class Helektra extends JavaPlugin {
     scoreboardService = injector.getInstance(IScoreboardService.class);
     matchService = injector.getInstance(MatchServiceImpl.class);
     scoreboardUpdater = injector.getInstance(ScoreboardUpdater.class);
+    cosmeticService = injector.getInstance(ICosmeticService.class);
     api = injector.getInstance(HelektraAPI.class);
 
     kitService.loadAll();
 
     IArenaService arenaService = injector.getInstance(IArenaService.class);
     arenaService.loadAll();
+
+    cosmeticService.loadCosmetics();
 
     log("&aMongoDB connected and services injected successfully.");
     log("&aHelektra API initialized successfully.");
@@ -215,12 +225,15 @@ public final class Helektra extends JavaPlugin {
       MatchEndListener.class,
       QueueMatchListener.class,
       FriendAddPromptListener.class,
-      SpectatorSessionListener.class
+      SpectatorSessionListener.class,
+      RodTrailListener.class,
+      ArrowTrailListener.class
     ).forEach(listenerClass -> {
       Object listener = injector.getInstance(listenerClass);
       Bukkit.getPluginManager().registerEvents((Listener) listener, this);
     });
     log("&aListeners registered successfully (via Guice).");
+    log("&aCosmetics system initialized successfully.");
   }
 
   private void registerCommands() {
@@ -255,6 +268,9 @@ public final class Helektra extends JavaPlugin {
     );
     manager.registerCommands(
       builder.fromClass(injector.getInstance(LayoutCommand.class))
+    );
+    manager.registerCommands(
+      builder.fromClass(injector.getInstance(CosmeticsCommand.class))
     );
 
     manager.registerCommands(

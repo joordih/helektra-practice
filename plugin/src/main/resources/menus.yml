@@ -6,6 +6,7 @@ settings:
   content:
     start-slot: 10
     end-slot: 16
+    auto-borders: true
 
   sounds:
     open:
@@ -201,46 +202,116 @@ settings:
         updated: "profile.settings.lobby-time.updated"
 
     pagination-previous:
-      position: 18
+      slot: 18
       material: ARROW
       name: "&ePrevious Page"
       lore:
-        - "&7Go back to &fPage {target-page}"
+        - "&7Go back to page: {previous-page}/{max-page}"
 
     pagination-next:
-      position: 26
+      slot: 26
       material: ARROW
       name: "&eNext Page"
       lore:
-        - "&7Go to &fPage {target-page}"
+        - "&7Go to page: {next-page}/{max-page}"
+
+cosmetics:
+  title: "&d&lCosmetics"
+  size: 54
+  paginated: true
+
+  content:
+    start-slot: 10
+    end-slot: 43
+    auto-borders: true
+
+  sounds:
+    open:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 1.2
+    close:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 0.8
+    default-click:
+      sound: UI_BUTTON_CLICK
+      volume: 1.0
+      pitch: 1.0
+
+  items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&7"
+      lore: []
+
+    back:
+      slot: 49
+      material: RED_STAINED_GLASS_PANE
+      name: "&c&lBack"
+      lore:
+        - "&7Return to previous menu"
+
+    pagination-previous:
+      slot: 45
+      material: ARROW
+      name: "&ePrevious Page"
+      lore:
+        - "&7Go back to page: {previous-page}/{max-page}"
+
+    pagination-next:
+      slot: 53
+      material: ARROW
+      name: "&eNext Page"
+      lore:
+        - "&7Go to page: {next-page}/{max-page}"
 
 friends:
   title: "&a☻ Friends"
   size: 54
+  paginated: true
   content:
     start-slot: 10
     end-slot: 34
+    auto-borders: false
+  sounds:
+    open:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 1.2
+    close:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 0.8
+    default-click:
+      sound: UI_BUTTON_CLICK
+      volume: 1.0
+      pitch: 1.0
   messages:
     profile-missing: "&cUnable to load your profile."
     empty: "&eYou have no friends yet."
   items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&7"
+      lore: []
     top-border-left:
-      position: 0
+      slot: 0
       material: BLACK_STAINED_GLASS_PANE
       name: "&0"
       lore: []
     top-border-right:
-      position: 8
+      slot: 8
       material: BLACK_STAINED_GLASS_PANE
       name: "&0"
       lore: []
     bottom-border-left:
-      position: 36
+      slot: 36
       material: BLACK_STAINED_GLASS_PANE
       name: "&0"
       lore: []
     bottom-border-right:
-      position: 44
+      slot: 44
       material: BLACK_STAINED_GLASS_PANE
       name: "&0"
       lore: []
@@ -265,69 +336,209 @@ friends:
       lore:
         - "&7Add more friends using the button below."
     pagination-previous:
-      position: 45
+      slot: 45
       material: ARROW
       name: "&ePrevious Page"
       lore:
-        - "&7Go to &fPage {target-page}"
+        - "&7Go back to page: {previous-page}/{max-page}"
     pagination-next:
-      position: 53
+      slot: 53
       material: ARROW
       name: "&eNext Page"
       lore:
-        - "&7Go to &fPage {target-page}"
+        - "&7Go to page: {next-page}/{max-page}"
     add-friend:
-      position: 49
+      slot: 49
       material: EMERALD
       name: "&aAdd Friend"
       lore:
         - "&7Click to add a new friend."
         - "&8You will be asked for their name in chat."
+    incoming-requests:
+      slot: 48
+      material: LIME_DYE
+      name: "&aIncoming Requests &7({count})"
+      lore:
+        - "&7View friend requests you have received."
+        - ""
+        - "&ePending: &f{count}"
+        - ""
+        - "&eClick to view!"
+    sent-requests:
+      slot: 50
+      material: ORANGE_DYE
+      name: "&6Sent Requests &7({count})"
+      lore:
+        - "&7View friend requests you have sent."
+        - ""
+        - "&ePending: &f{count}"
+        - ""
+        - "&eClick to view!"
+
+friend-requests:
+  title: "&aIncoming Friend Requests"
+  size: 54
+  paginated: true
+  content:
+    start-slot: 10
+    end-slot: 43
+    auto-borders: true
+  sounds:
+    open:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 1.2
+    close:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 0.8
+    default-click:
+      sound: UI_BUTTON_CLICK
+      volume: 1.0
+      pitch: 1.0
+  messages:
+    empty: "&eYou have no incoming friend requests."
+  items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&7"
+      lore: []
+    back:
+      slot: 49
+      material: ARROW
+      name: "&cBack"
+      lore:
+        - "&7Return to friends menu"
+    pagination-previous:
+      slot: 45
+      material: ARROW
+      name: "&e&lPrevious Page"
+      lore:
+        - "&7Click to view previous page"
+    pagination-next:
+      slot: 53
+      material: ARROW
+      name: "&e&lNext Page"
+      lore:
+        - "&7Click to view next page"
+
+sent-requests:
+  title: "&6Sent Friend Requests"
+  size: 54
+  paginated: true
+  content:
+    start-slot: 10
+    end-slot: 43
+    auto-borders: true
+  sounds:
+    open:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 1.2
+    close:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 0.8
+    default-click:
+      sound: UI_BUTTON_CLICK
+      volume: 1.0
+      pitch: 1.0
+  messages:
+    empty: "&eYou have no pending friend requests."
+  items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&7"
+      lore: []
+    back:
+      slot: 49
+      material: ARROW
+      name: "&cBack"
+      lore:
+        - "&7Return to friends menu"
+    pagination-previous:
+      slot: 45
+      material: ARROW
+      name: "&e&lPrevious Page"
+      lore:
+        - "&7Click to view previous page"
+    pagination-next:
+      slot: 53
+      material: ARROW
+      name: "&e&lNext Page"
+      lore:
+        - "&7Click to view next page"
 
 friend-options:
   title: "&aFriend Options"
   size: 27
+  sounds:
+    open:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 1.2
+    close:
+      sound: UI_BUTTON_CLICK
+      volume: 0.8
+      pitch: 0.8
+    default-click:
+      sound: UI_BUTTON_CLICK
+      volume: 1.0
+      pitch: 1.0
   messages:
     no-selection: "&cSelect a friend first."
   items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&7"
+      lore: []
     info:
-      position: 13
-      material: PAPER
-      name: "&b{friend}"
+      slot: 13
+      material: PLAYER_HEAD
+      name: "&a{friend}"
       lore:
-        - "&7Status&8: {status}"
-        - "&7Online&8: {online}"
+        - "&7Status: {status}"
+        - "&7Online: {online}"
+        - ""
+        - "&eManage your friend below"
     remove:
-      position: 11
-      material: REDSTONE
+      slot: 10
+      material: RED_DYE
       name: "&cRemove Friend"
       lore:
-        - "&7Remove &f{friend} &7from your friends list."
+        - "&7Remove &f{friend} &7from your"
+        - "&7friends list."
+        - ""
+        - "&cClick to remove!"
       messages:
-        success: "&cRemoved {friend} from your friends list."
+        success: "&cRemoved &f{friend} &cfrom your friends list."
     invite:
-      position: 15
-      material: ENDER_PEARL
+      slot: 12
+      material: LIME_DYE
       name: "&aInvite to Party"
       lore:
-        - "&7Send a party invite to &f{friend}&7."
+        - "&7Send a party invite to"
+        - "&f{friend}&7."
+        - ""
+        - "&eClick to invite!"
       command: "party invite {friend}"
       messages:
-        success: "&aSent a party invite to {friend}."
-    block:
-      position: 17
-      material: BARRIER
-      name: "&cBlock Friend"
+        success: "&aSent party invite to &f{friend}&a!"
+    view-stats:
+      slot: 14
+      material: BOOK
+      name: "&eView Stats"
       lore:
-        - "&7Block &f{friend} &7from interacting with you."
-      messages:
-        success: "&cBlocked {friend}."
+        - "&7View statistics for"
+        - "&f{friend}&7."
+        - ""
+        - "&8Coming soon..."
     back:
-      position: 26
+      slot: 22
       material: ARROW
       name: "&cBack"
       lore:
-        - "&7Return to your friends list."
+        - "&7Return to friends menu"
 
 ping-matchmaking:
   title: "&6&lPing Matchmaking Settings"

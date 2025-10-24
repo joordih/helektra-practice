@@ -1,254 +1,248 @@
 package dev.voltic.helektra.plugin.model.profile.menu;
 
-import dev.voltic.helektra.api.model.profile.IFriend;
-import dev.voltic.helektra.api.model.profile.IProfile;
-import dev.voltic.helektra.plugin.Helektra;
-import dev.voltic.helektra.plugin.model.profile.friend.FriendAddPromptService;
-import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuConfig;
-import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuItemFactory;
-import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuItemFactory.FriendView;
-import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuSelectionService;
-import dev.voltic.helektra.plugin.model.profile.menu.submenus.FriendOptionsMenu;
-import dev.voltic.helektra.plugin.utils.MenuConfigHelper;
-import dev.voltic.helektra.plugin.utils.MenuConfigHelper.MenuItemConfig;
-import dev.voltic.helektra.plugin.utils.TranslationUtils;
-import dev.voltic.helektra.plugin.utils.menu.InjectablePaginatedMenu;
-import fr.mrmicky.fastinv.ItemBuilder;
-import jakarta.inject.Inject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
 
-public class FriendsMenu extends InjectablePaginatedMenu {
+import dev.voltic.helektra.api.model.profile.IFriend;
+import dev.voltic.helektra.api.model.profile.IFriendService;
+import dev.voltic.helektra.api.model.profile.IProfile;
+import dev.voltic.helektra.api.model.profile.IProfileService;
+import dev.voltic.helektra.plugin.Helektra;
+import dev.voltic.helektra.plugin.model.profile.friend.FriendAddPromptService;
+import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuItemFactory.FriendView;
+import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuSelectionService;
+import dev.voltic.helektra.plugin.model.profile.menu.submenus.FriendOptionsMenu;
+import dev.voltic.helektra.plugin.model.profile.menu.submenus.FriendRequestsMenu;
+import dev.voltic.helektra.plugin.model.profile.menu.submenus.SentRequestsMenu;
+import dev.voltic.helektra.plugin.utils.ColorUtils;
+import dev.voltic.helektra.plugin.utils.MenuConfigHelper;
+import dev.voltic.helektra.plugin.utils.MenuConfigHelper.MenuItemConfig;
+import dev.voltic.helektra.plugin.utils.TranslationUtils;
+import dev.voltic.helektra.plugin.utils.menu.DynamicMenu;
+import dev.voltic.helektra.plugin.utils.xseries.XMaterial;
+import fr.mrmicky.fastinv.ItemBuilder;
+import jakarta.inject.Inject;
 
-  private final Helektra helektra;
-  private final FriendMenuConfig friendMenuConfig;
-  private final FriendMenuItemFactory itemFactory;
-  private final FriendMenuSelectionService selectionService;
+public class FriendsMenu extends DynamicMenu {
+
+  private static final String MENU_PATH = "friends";
+  private static final String KEY_FILLER = "filler";
+  private static final String KEY_INCOMING_REQUESTS = "incoming-requests";
+  private static final String KEY_SENT_REQUESTS = "sent-requests";
+  private static final String KEY_ADD_FRIEND = "add-friend";
+
+  private final Helektra plugin;
+  private final IFriendService friendService;
   private final FriendAddPromptService addPromptService;
-
-  private List<Integer> contentSlots = List.of();
-  private ItemStack emptyItem;
+  private final IProfileService profileService;
+  private final FriendMenuSelectionService selectionService;
 
   @Inject
   public FriendsMenu(
-    MenuConfigHelper menuConfigHelper,
-    Helektra helektra,
-    FriendMenuConfig friendMenuConfig,
-    FriendMenuItemFactory itemFactory,
-    FriendMenuSelectionService selectionService,
-    FriendAddPromptService addPromptService
+    MenuConfigHelper configHelper,
+    Helektra plugin,
+    IFriendService friendService,
+    FriendAddPromptService addPromptService,
+    IProfileService profileService,
+    FriendMenuSelectionService selectionService
   ) {
-    super(menuConfigHelper, friendMenuConfig.getMenuPath());
-    this.helektra = helektra;
-    this.friendMenuConfig = friendMenuConfig;
-    this.itemFactory = itemFactory;
-    this.selectionService = selectionService;
+    super(configHelper, MENU_PATH);
+    this.plugin = plugin;
+    this.friendService = friendService;
     this.addPromptService = addPromptService;
+    this.profileService = profileService;
+    this.selectionService = selectionService;
   }
 
   @Override
   public void setup(Player player) {
-    getInventory().clear();
-    clearContent();
-    selectionService.clear(player.getUniqueId());
+    Optional<IProfile> optionalProfile = plugin.getProfileService().getProfile(player.getUniqueId()).join();
+    if (optionalProfile.isEmpty()) {
+      player.sendMessage(TranslationUtils.translate("profile.error"));
+      return;
+    }
+    render(player);
+  }
 
-    Optional<IProfile> profileOpt = helektra
-      .getProfileService()
-      .getProfile(player.getUniqueId())
-      .join();
-    if (profileOpt.isEmpty()) {
-      String message = friendMenuConfig.getProfileMissingMessage();
-      if (message.isEmpty()) {
-        player.sendMessage(TranslationUtils.translate("profile.error"));
-      } else {
-        player.sendMessage(
-          friendMenuConfig.applyPlaceholders(
-            message,
-            Map.of("player", player.getName())
-          )
-        );
-      }
+  private void render(Player player) {
+    clear();
+    initializePagination();
+
+    Map<String, MenuItemConfig> itemConfigs = getAllItemConfigs();
+    List<IFriend> acceptedFriends = friendService.getAcceptedFriends(player.getUniqueId()).join();
+
+    for (IFriend friend : acceptedFriends) {
+      ItemStack friendItem = buildFriendItem(player, friend);
+      addDynamicItemWithHandler(friendItem, e -> handleFriendClick(player, friend, e));
+    }
+
+    setupIncomingRequestsButton(player, itemConfigs);
+    setupSentRequestsButton(player, itemConfigs);
+    setupAddFriendButton(player, itemConfigs);
+    
+    fillFiller(itemConfigs.get(KEY_FILLER));
+    completeRefresh();
+    setupPaginationItems(player);
+  }
+
+  private void setupIncomingRequestsButton(Player player, Map<String, MenuItemConfig> itemConfigs) {
+    MenuItemConfig config = itemConfigs.get(KEY_INCOMING_REQUESTS);
+    if (config == null || !config.exists()) {
       return;
     }
 
-    IProfile profile = profileOpt.get();
-    List<IFriend> friends = profile.getFriends().join();
-    List<FriendView> views = friends
-      .stream()
-      .map(itemFactory::toView)
-      .collect(Collectors.toList());
+    List<IFriend> incomingRequests = friendService.getIncomingRequests(player.getUniqueId()).join();
+    int requestCount = incomingRequests.size();
 
-    contentSlots = resolveContentSlots();
-    setContentSlots(contentSlots);
-
-    Map<String, String> basePlaceholders = buildBasePlaceholders(
-      player,
-      views.size()
+    Map<String, String> placeholders = Map.of(
+      "count", String.valueOf(requestCount),
+      "requestCount", String.valueOf(requestCount)
     );
 
-    applyStaticItems(basePlaceholders);
-    applyAddFriendItem(basePlaceholders);
-    emptyItem = itemFactory.buildEmptyItem(basePlaceholders);
+    String name = applyPlaceholders(config.getName(), placeholders);
+    List<String> lore = applyPlaceholders(config.getLore(), placeholders);
 
-    populateFriends(views, basePlaceholders);
-    applyPagination(basePlaceholders);
+    ItemStack item = new ItemBuilder(config.getMaterial())
+      .name(name)
+      .lore(lore)
+      .build();
 
-    if (views.isEmpty()) {
-      String message = friendMenuConfig.getEmptyMessage();
-      if (!message.isEmpty()) {
-        player.sendMessage(
-          friendMenuConfig.applyPlaceholders(message, basePlaceholders)
-        );
-      }
-    }
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> {
+      e.setCancelled(true);
+      plugin.getMenuFactory().openMenu(FriendRequestsMenu.class, player);
+    });
   }
 
-  @Override
-  protected void onPageChange(int page) {
-    if (emptyItem == null) {
+  private void setupSentRequestsButton(Player player, Map<String, MenuItemConfig> itemConfigs) {
+    MenuItemConfig config = itemConfigs.get(KEY_SENT_REQUESTS);
+    if (config == null || !config.exists()) {
       return;
     }
-    for (int slot : contentSlots) {
-      if (getInventory().getItem(slot) == null) {
-        setItem(slot, emptyItem.clone());
-      }
-    }
+
+    List<IFriend> sentRequests = friendService.getOutgoingRequests(player.getUniqueId()).join();
+    int requestCount = sentRequests.size();
+
+    Map<String, String> placeholders = Map.of(
+      "count", String.valueOf(requestCount),
+      "requestCount", String.valueOf(requestCount)
+    );
+
+    String name = applyPlaceholders(config.getName(), placeholders);
+    List<String> lore = applyPlaceholders(config.getLore(), placeholders);
+
+    ItemStack item = new ItemBuilder(config.getMaterial())
+      .name(name)
+      .lore(lore)
+      .build();
+
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> {
+      e.setCancelled(true);
+      plugin.getMenuFactory().openMenu(SentRequestsMenu.class, player);
+    });
   }
 
-  private List<Integer> resolveContentSlots() {
-    List<Integer> slots = friendMenuConfig.getContentSlots();
-    if (slots.isEmpty()) {
-      return IntStream.range(0, getInventory().getSize()).boxed().toList();
-    }
-    return new ArrayList<>(slots);
-  }
-
-  private Map<String, String> buildBasePlaceholders(
-    Player player,
-    int totalFriends
-  ) {
-    Map<String, String> placeholders = new HashMap<>();
-    placeholders.put("player", player.getName());
-    placeholders.put("player_uuid", player.getUniqueId().toString());
-    placeholders.put("total", String.valueOf(totalFriends));
-    placeholders.put("friend_count", String.valueOf(totalFriends));
-    placeholders.put("visible_slots", String.valueOf(contentSlots.size()));
-    return placeholders;
-  }
-
-  private void applyStaticItems(Map<String, String> placeholders) {
-    friendMenuConfig
-      .getStaticItems()
-      .forEach(config -> {
-        ItemStack item = itemFactory.buildItem(config, placeholders);
-        if (item != null) {
-          setItem(config.getPosition(), item);
-        }
-      });
-  }
-
-  private void applyAddFriendItem(Map<String, String> placeholders) {
-    MenuItemConfig addFriend = friendMenuConfig.getAddFriendItem();
-    if (!addFriend.exists()) {
+  private void setupAddFriendButton(Player player, Map<String, MenuItemConfig> itemConfigs) {
+    MenuItemConfig config = itemConfigs.get(KEY_ADD_FRIEND);
+    if (config == null || !config.exists()) {
       return;
     }
-    ItemStack item = itemFactory.buildItem(addFriend, placeholders);
-    if (item == null) {
-      return;
-    }
-    setItem(addFriend.getPosition(), item, event -> {
-      Player clicker = (Player) event.getWhoClicked();
-      handleAddFriendClick(clicker);
+
+    ItemStack item = buildStatic(config);
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> {
+      e.setCancelled(true);
+      handleAddFriendClick(player);
     });
   }
 
   private void handleAddFriendClick(Player player) {
     player.closeInventory();
     if (!addPromptService.beginPrompt(player.getUniqueId())) {
-      player.sendMessage(
-        TranslationUtils.translate("friends.prompt.add.already")
-      );
+      player.sendMessage(TranslationUtils.translate("friends.prompt.add.already"));
       return;
     }
     player.sendMessage(TranslationUtils.translate("friends.prompt.add.start"));
   }
 
-  private void populateFriends(
-    List<FriendView> views,
-    Map<String, String> basePlaceholders
-  ) {
-    clearContent();
-    int index = 1;
-    for (FriendView view : views) {
-      ItemStack item = itemFactory.buildFriendItem(
-        view,
-        basePlaceholders,
-        index,
-        views.size()
-      );
-      if (item != null) {
-        FriendView friendView = view;
-        addContent(item, event -> {
-          Player clicker = (Player) event.getWhoClicked();
-          selectionService.select(clicker.getUniqueId(), friendView);
-          helektra.getMenuFactory().openMenu(FriendOptionsMenu.class, clicker);
-        });
+  private ItemStack buildFriendItem(Player viewer, IFriend friend) {
+    boolean online = Bukkit.getPlayer(friend.getUniqueId()) != null;
+    
+    String friendName = friend.getName();
+    if (friendName == null || friendName.isEmpty()) {
+      IProfile friendProfile = profileService.getProfile(friend.getUniqueId()).join().orElse(null);
+      if (friendProfile != null) {
+        friendName = friendProfile.getName();
+      } else {
+        friendName = "Unknown";
       }
-      index++;
     }
-  }
+    
+    String statusLabel = TranslationUtils.translate("friends.status." + friend.getStatus().name().toLowerCase());
+    String onlineColor = online ? "&a" : "&c";
+    String onlineText = online ? "Online" : "Offline";
 
-  private void applyPagination(Map<String, String> basePlaceholders) {
-    MenuItemConfig previous = friendMenuConfig.getPreviousItem();
-    if (previous.exists()) {
-      previousPageItem(previous.getPosition(), targetPage -> {
-        Map<String, String> placeholders = buildPaginationPlaceholders(
-          basePlaceholders,
-          targetPage
-        );
-        ItemStack item = itemFactory.buildPaginationItem(
-          previous,
-          placeholders
-        );
-        return item != null
-          ? item
-          : new ItemBuilder(previous.getMaterial()).build();
-      });
+    List<String> lore = new ArrayList<>();
+    lore.add(ColorUtils.translate("&7Status: " + statusLabel));
+    lore.add(ColorUtils.translate("&7Online: " + onlineColor + onlineText));
+    lore.add("");
+    lore.add(ColorUtils.translate("&eClick to manage"));
+
+    ItemStack skull = XMaterial.PLAYER_HEAD.parseItem();
+    if (skull != null && skull.getItemMeta() instanceof SkullMeta skullMeta) {
+      skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(friend.getUniqueId()));
+      skull.setItemMeta(skullMeta);
     }
 
-    MenuItemConfig next = friendMenuConfig.getNextItem();
-    if (next.exists()) {
-      nextPageItem(next.getPosition(), targetPage -> {
-        Map<String, String> placeholders = buildPaginationPlaceholders(
-          basePlaceholders,
-          targetPage
-        );
-        ItemStack item = itemFactory.buildPaginationItem(next, placeholders);
-        return item != null
-          ? item
-          : new ItemBuilder(next.getMaterial()).build();
-      });
-    }
+    return new ItemBuilder(skull != null ? skull : XMaterial.PLAYER_HEAD.parseItem())
+      .name(ColorUtils.translate("&a" + friendName))
+      .lore(lore)
+      .build();
   }
 
-  private Map<String, String> buildPaginationPlaceholders(
-    Map<String, String> basePlaceholders,
-    int targetPage
-  ) {
-    Map<String, String> placeholders = new HashMap<>(basePlaceholders);
-    placeholders.put("target-page", String.valueOf(targetPage));
-    placeholders.put("page", String.valueOf(targetPage));
-    placeholders.put("current-page", String.valueOf(currentPage()));
-    int last = Math.max(1, lastPage());
-    placeholders.put("last-page", String.valueOf(last));
-    placeholders.put("total-pages", String.valueOf(last));
-    return placeholders;
+  private void handleFriendClick(Player player, IFriend friend, InventoryClickEvent event) {
+    event.setCancelled(true);
+    boolean online = Bukkit.getPlayer(friend.getUniqueId()) != null;
+    String friendName = friend.getName();
+    if (friendName == null || friendName.isEmpty()) {
+      IProfile friendProfile = profileService.getProfile(friend.getUniqueId()).join().orElse(null);
+      if (friendProfile != null) {
+        friendName = friendProfile.getName();
+      } else {
+        friendName = "Unknown";
+      }
+    }
+
+    selectionService.select(player.getUniqueId(), new FriendView(friend.getUniqueId(), friendName, friend.getStatus(), online));
+    plugin.getMenuFactory().openMenu(FriendOptionsMenu.class, player);
   }
+
+  private ItemStack buildStatic(MenuItemConfig itemConfig) {
+    return new ItemBuilder(itemConfig.getMaterial())
+      .name(itemConfig.getName())
+      .lore(itemConfig.getLore())
+      .build();
+  }
+
+  private String applyPlaceholders(String text, Map<String, String> placeholders) {
+    String result = text;
+    for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+      result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+    }
+    return ColorUtils.translate(result);
+  }
+
+  private List<String> applyPlaceholders(List<String> lines, Map<String, String> placeholders) {
+    return lines.stream()
+      .map(line -> applyPlaceholders(line, placeholders))
+      .toList();
+  }
+
+  
 }

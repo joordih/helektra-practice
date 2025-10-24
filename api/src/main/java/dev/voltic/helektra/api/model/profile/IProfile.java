@@ -1,6 +1,7 @@
 package dev.voltic.helektra.api.model.profile;
 
 import dev.voltic.helektra.api.model.Model;
+import dev.voltic.helektra.api.model.cosmetic.ICosmetics;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +32,10 @@ public interface IProfile extends Model {
   CompletableFuture<Void> removeFriend(UUID friendId);
 
   CompletableFuture<Boolean> isFriend(UUID friendId);
+
+  ICosmetics getCosmetics();
+
+  void setCosmetics(ICosmetics cosmetics);
 
   default PingMatchmaking getPingMatchmaking() {
     return getSettings().getPingMatchmaking();

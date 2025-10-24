@@ -3,11 +3,13 @@ package dev.voltic.helektra.plugin.model.profile;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.voltic.helektra.api.model.cosmetic.ICosmetics;
 import dev.voltic.helektra.api.model.profile.IFriend;
 import dev.voltic.helektra.api.model.profile.IProfile;
 import dev.voltic.helektra.api.model.profile.LobbyTime;
 import dev.voltic.helektra.api.model.profile.PingMatchmaking;
 import dev.voltic.helektra.api.model.profile.ProfileState;
+import dev.voltic.helektra.plugin.model.cosmetic.Cosmetics;
 import dev.voltic.helektra.plugin.model.profile.friend.FriendServiceImpl;
 import jakarta.inject.Inject;
 import java.beans.ConstructorProperties;
@@ -27,6 +29,7 @@ public class Profile implements IProfile {
   private String name;
   private int level;
   private Settings settings;
+  private Cosmetics cosmetics;
 
   @JsonIgnore
   private ProfileState profileState = ProfileState.LOBBY;
@@ -40,23 +43,25 @@ public class Profile implements IProfile {
   }
 
   public Profile(String id, String name) {
-    this(id, name, 0, defaultSettings(), null);
+    this(id, name, 0, defaultSettings(), new Cosmetics(), null);
   }
 
   @ConstructorProperties(
-    { "_id", "name", "level", "settings", "friendService" }
+    { "_id", "name", "level", "settings", "cosmetics", "friendService" }
   )
   public Profile(
     String id,
     String name,
     int level,
     Settings settings,
+    Cosmetics cosmetics,
     FriendServiceImpl friendService
   ) {
     this.id = id;
     this.name = name;
     this.level = level;
     this.settings = settings != null ? settings : defaultSettings();
+    this.cosmetics = cosmetics != null ? cosmetics : new Cosmetics();
     this.friendService = friendService;
   }
 
@@ -110,6 +115,19 @@ public class Profile implements IProfile {
   @Override
   public CompletableFuture<Boolean> isFriend(UUID friendId) {
     return requireFriendService().areFriends(getUniqueId(), friendId);
+  }
+
+  @Override
+  public ICosmetics getCosmetics() {
+    return cosmetics;
+  }
+
+  @Override
+  public void setCosmetics(ICosmetics cosmetics) {
+    if (cosmetics instanceof Cosmetics c) this.cosmetics = c;
+    else throw new IllegalArgumentException(
+      "Invalid cosmetics type: " + cosmetics.getClass()
+    );
   }
 
   public static class Settings implements IProfile.Settings {

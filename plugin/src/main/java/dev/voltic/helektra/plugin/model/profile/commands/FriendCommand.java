@@ -74,7 +74,7 @@ public class FriendCommand implements CommandClass {
     friends.forEach(friend -> player.sendMessage(formatFriendEntry(friend)));
   }
 
-  @Command(names = "add")
+  @Command(names = { "add", "request" })
   public void addFriend(
     @Sender Player player,
     @Named("player") String targetName

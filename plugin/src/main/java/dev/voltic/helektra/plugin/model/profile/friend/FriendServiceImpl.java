@@ -2,8 +2,10 @@ package dev.voltic.helektra.plugin.model.profile.friend;
 
 import dev.voltic.helektra.api.model.profile.IFriend;
 import dev.voltic.helektra.api.model.profile.IFriendService;
+import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.plugin.model.profile.friend.repository.FriendRepository;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.*;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 public class FriendServiceImpl implements IFriendService {
 
   private final FriendRepository repository;
+  private final Provider<IProfileService> profileServiceProvider;
   private final Map<UUID, Map<UUID, Friend>> cache = new ConcurrentHashMap<>();
 
   @Override
@@ -137,6 +140,126 @@ public class FriendServiceImpl implements IFriendService {
         cacheFriend(ownerId, friend);
         return repository.save(ownerId, friend);
       });
+  }
+
+  private CompletableFuture<Void> updateFriendWithNameAndStatus(
+    UUID ownerId,
+    UUID friendId,
+    String friendName,
+    IFriend.Status status
+  ) {
+    Friend cached = cache.getOrDefault(ownerId, Map.of()).get(friendId);
+    if (cached != null) {
+      cached.setName(friendName);
+      cached.setStatus(status);
+      cacheFriend(ownerId, cached);
+      return repository.save(ownerId, cached);
+    }
+
+    return repository
+      .findById(ownerId, friendId)
+      .thenCompose(opt -> {
+        if (opt.isEmpty()) {
+          return CompletableFuture.failedFuture(
+            new IllegalStateException("Friend not found")
+          );
+        }
+        Friend friend = opt.get();
+        friend.setName(friendName);
+        friend.setStatus(status);
+        cacheFriend(ownerId, friend);
+        return repository.save(ownerId, friend);
+      });
+  }
+
+  @Override
+  public CompletableFuture<Void> sendFriendRequest(UUID senderId, UUID receiverId, String receiverName) {
+    Friend outgoingRequest = new Friend(
+      senderId + ":" + receiverId,
+      receiverName,
+      IFriend.Status.PENDING
+    );
+    cacheFriend(senderId, outgoingRequest);
+
+    Friend incomingRequest = new Friend(
+      receiverId + ":" + senderId,
+      "",
+      IFriend.Status.PENDING
+    );
+    cacheFriend(receiverId, incomingRequest);
+
+    return repository.save(senderId, outgoingRequest)
+      .thenCompose(v -> repository.save(receiverId, incomingRequest));
+  }
+
+  @Override
+  public CompletableFuture<Void> acceptFriendRequest(UUID receiverId, UUID senderId) {
+    IProfileService profileService = profileServiceProvider.get();
+    return profileService.getProfile(senderId)
+      .thenCompose(senderProfileOpt -> {
+        String senderName = senderProfileOpt.map(p -> p.getName()).orElse("");
+        return profileService.getProfile(receiverId)
+          .thenCompose(receiverProfileOpt -> {
+            String receiverName = receiverProfileOpt.map(p -> p.getName()).orElse("");
+            return updateFriendWithNameAndStatus(receiverId, senderId, senderName, IFriend.Status.ACCEPTED)
+              .thenCompose(v -> updateFriendWithNameAndStatus(senderId, receiverId, receiverName, IFriend.Status.ACCEPTED));
+          });
+      });
+  }
+
+  @Override
+  public CompletableFuture<Void> denyFriendRequest(UUID receiverId, UUID senderId) {
+    uncacheFriend(receiverId, senderId);
+    uncacheFriend(senderId, receiverId);
+    return repository.delete(receiverId, senderId)
+      .thenCompose(v -> repository.delete(senderId, receiverId));
+  }
+
+  @Override
+  public CompletableFuture<Void> cancelFriendRequest(UUID senderId, UUID receiverId) {
+    uncacheFriend(senderId, receiverId);
+    uncacheFriend(receiverId, senderId);
+    return repository.delete(senderId, receiverId)
+      .thenCompose(v -> repository.delete(receiverId, senderId));
+  }
+
+  @Override
+  public CompletableFuture<List<IFriend>> getIncomingRequests(UUID playerId) {
+    return getFriendsOf(playerId).thenApply(friends ->
+      friends.stream()
+        .filter(f -> f.getStatus() == IFriend.Status.PENDING)
+        .filter(f -> {
+          if (f instanceof Friend friend) {
+            return FriendRequestHelper.isIncomingRequest(friend, playerId);
+          }
+          return false;
+        })
+        .collect(Collectors.toList())
+    );
+  }
+
+  @Override
+  public CompletableFuture<List<IFriend>> getOutgoingRequests(UUID playerId) {
+    return getFriendsOf(playerId).thenApply(friends ->
+      friends.stream()
+        .filter(f -> f.getStatus() == IFriend.Status.PENDING)
+        .filter(f -> {
+          if (f instanceof Friend friend) {
+            return FriendRequestHelper.isOutgoingRequest(friend, playerId);
+          }
+          return false;
+        })
+        .collect(Collectors.toList())
+    );
+  }
+
+  @Override
+  public CompletableFuture<List<IFriend>> getAcceptedFriends(UUID playerId) {
+    return getFriendsOf(playerId).thenApply(friends ->
+      friends.stream()
+        .filter(f -> f.getStatus() == IFriend.Status.ACCEPTED)
+        .collect(Collectors.toList())
+    );
   }
 
   @Override

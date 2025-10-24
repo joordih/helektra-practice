@@ -1,214 +1,265 @@
 package dev.voltic.helektra.plugin.model.profile.menu.submenus;
 
-import dev.voltic.helektra.api.model.profile.IFriend;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
+
 import dev.voltic.helektra.api.model.profile.IFriendService;
+import dev.voltic.helektra.api.model.profile.IProfile;
+import dev.voltic.helektra.api.model.profile.IProfileService;
 import dev.voltic.helektra.plugin.Helektra;
 import dev.voltic.helektra.plugin.model.profile.menu.FriendsMenu;
-import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuConfig;
-import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuItemFactory;
 import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuItemFactory.FriendView;
 import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendMenuSelectionService;
-import dev.voltic.helektra.plugin.model.profile.menu.friend.FriendOptionsMenuConfig;
+import dev.voltic.helektra.plugin.utils.ColorUtils;
 import dev.voltic.helektra.plugin.utils.MenuConfigHelper;
 import dev.voltic.helektra.plugin.utils.MenuConfigHelper.MenuItemConfig;
-import dev.voltic.helektra.plugin.utils.menu.InjectableMenu;
+import dev.voltic.helektra.plugin.utils.TranslationUtils;
+import dev.voltic.helektra.plugin.utils.menu.DynamicMenu;
+import dev.voltic.helektra.plugin.utils.xseries.XMaterial;
+import fr.mrmicky.fastinv.ItemBuilder;
 import jakarta.inject.Inject;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryClickEvent;
 
-public class FriendOptionsMenu extends InjectableMenu {
+public class FriendOptionsMenu extends DynamicMenu {
 
-  private final FriendOptionsMenuConfig optionsConfig;
-  private final FriendMenuConfig friendMenuConfig;
-  private final FriendMenuItemFactory itemFactory;
-  private final FriendMenuSelectionService selectionService;
+  private static final String MENU_PATH = "friend-options";
+  private static final String KEY_FILLER = "filler";
+  private static final String KEY_INFO = "info";
+  private static final String KEY_REMOVE = "remove";
+  private static final String KEY_INVITE = "invite";
+  private static final String KEY_VIEW_STATS = "view-stats";
+  private static final String KEY_BACK = "back";
+
+  private final Helektra plugin;
   private final IFriendService friendService;
-  private final Helektra helektra;
+  private final FriendMenuSelectionService selectionService;
+  private final IProfileService profileService;
 
   @Inject
   public FriendOptionsMenu(
-    MenuConfigHelper menuConfig,
-    FriendOptionsMenuConfig optionsConfig,
-    FriendMenuConfig friendMenuConfig,
-    FriendMenuItemFactory itemFactory,
-    FriendMenuSelectionService selectionService,
+    MenuConfigHelper configHelper,
+    Helektra plugin,
     IFriendService friendService,
-    Helektra helektra
+    IProfileService profileService,
+    FriendMenuSelectionService selectionService
   ) {
-    super(menuConfig, optionsConfig.getMenuPath());
-    this.optionsConfig = optionsConfig;
-    this.friendMenuConfig = friendMenuConfig;
-    this.itemFactory = itemFactory;
-    this.selectionService = selectionService;
+    super(configHelper, MENU_PATH);
+    this.plugin = plugin;
     this.friendService = friendService;
-    this.helektra = helektra;
+    this.profileService = profileService;
+    this.selectionService = selectionService;
   }
 
   @Override
   public void setup(Player player) {
-    Optional<FriendView> selectionOpt = selectionService.getSelection(
-      player.getUniqueId()
-    );
-    if (selectionOpt.isEmpty()) {
-      String message = optionsConfig.getMessage("no-selection", "");
+    java.util.Optional<FriendView> selection = selectionService.getSelection(player.getUniqueId());
+    if (selection.isEmpty()) {
+      String message = getMenuConfigHelper().getString(MENU_PATH + ".messages.no-selection", "");
       if (!message.isEmpty()) {
-        player.sendMessage(
-          optionsConfig.applyPlaceholders(
-            message,
-            Map.of("player", player.getName())
-          )
-        );
+        player.sendMessage(ColorUtils.translate(message));
       }
-      helektra.getMenuFactory().openMenu(FriendsMenu.class, player);
+      plugin.getMenuFactory().openMenu(FriendsMenu.class, player);
+      return;
+    }
+    render(player, selection.get());
+  }
+
+  private void render(Player player, FriendView friend) {
+    clear();
+    Map<String, MenuItemConfig> itemConfigs = getAllItemConfigs();
+
+    fillFiller(itemConfigs.get(KEY_FILLER));
+    setupInfoItem(itemConfigs, friend);
+    setupRemoveButton(itemConfigs, player, friend);
+    setupInviteButton(itemConfigs, player, friend);
+    setupViewStatsButton(itemConfigs, friend);
+    setupBackButton(itemConfigs, player);
+    
+    open(player);
+  }
+
+  private void setupInfoItem(Map<String, MenuItemConfig> itemConfigs, FriendView friend) {
+    MenuItemConfig config = itemConfigs.get(KEY_INFO);
+    if (config == null || !config.exists()) {
       return;
     }
 
-    FriendView selection = selectionOpt.get();
-    Map<String, String> placeholders = buildPlaceholders(player, selection);
+    String friendName = getFriendName(friend.uniqueId(), friend.name());
+    boolean online = Bukkit.getPlayer(friend.uniqueId()) != null;
+    String statusLabel = TranslationUtils.translate("friends.status." + friend.status().name().toLowerCase());
+    String onlineColor = online ? "&a" : "&c";
+    String onlineText = online ? "Online" : "Offline";
 
-    optionsConfig
-      .getStaticItems()
-      .forEach(config -> setConfiguredItem(config, placeholders, null));
+    Map<String, String> placeholders = Map.of(
+      "friend", friendName,
+      "status", statusLabel,
+      "online", onlineColor + onlineText
+    );
 
-    setActionItem("remove", placeholders, selection);
-    setActionItem("invite", placeholders, selection);
-    setActionItem("block", placeholders, selection);
-    setActionItem("back", placeholders, selection);
+    String name = applyPlaceholders(config.getName(), placeholders);
+    List<String> lore = applyPlaceholders(config.getLore(), placeholders);
+
+    ItemStack skull = XMaterial.PLAYER_HEAD.parseItem();
+    if (skull != null && skull.getItemMeta() instanceof SkullMeta skullMeta) {
+      skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(friend.uniqueId()));
+      skull.setItemMeta(skullMeta);
+    }
+
+    ItemStack item = new ItemBuilder(skull != null ? skull : XMaterial.PLAYER_HEAD.parseItem())
+      .name(name)
+      .lore(lore)
+      .build();
+
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> e.setCancelled(true));
   }
 
-  private Map<String, String> buildPlaceholders(
-    Player player,
-    FriendView selection
-  ) {
-    Map<String, String> placeholders = new HashMap<>();
-    placeholders.put("player", player.getName());
-    placeholders.put("player_uuid", player.getUniqueId().toString());
-    placeholders.put("friend", selection.name());
-    placeholders.put("friend_name", selection.name());
-    placeholders.put("friend_uuid", selection.uniqueId().toString());
-    placeholders.put(
-      "status",
-      friendMenuConfig.getStatusLabel(selection.status())
-    );
-    placeholders.put(
-      "online",
-      friendMenuConfig.getOnlineLabel(selection.online())
-    );
-    return placeholders;
-  }
-
-  private void setActionItem(
-    String key,
-    Map<String, String> placeholders,
-    FriendView selection
-  ) {
-    MenuItemConfig config = optionsConfig.getItem(key);
-    if (!config.exists()) {
+  private void setupRemoveButton(Map<String, MenuItemConfig> itemConfigs, Player player, FriendView friend) {
+    MenuItemConfig config = itemConfigs.get(KEY_REMOVE);
+    if (config == null || !config.exists()) {
       return;
     }
 
-    setConfiguredItem(config, placeholders, event -> {
-      Player clicker = (Player) event.getWhoClicked();
-      switch (key) {
-        case "remove" -> handleRemove(clicker, selection, config, placeholders);
-        case "invite" -> handleInvite(clicker, config, placeholders);
-        case "block" -> handleBlock(clicker, selection, config, placeholders);
-        case "back" -> handleBack(clicker);
-        default -> {}
-      }
+    String friendName = getFriendName(friend.uniqueId(), friend.name());
+    Map<String, String> placeholders = Map.of("friend", friendName);
+    String name = applyPlaceholders(config.getName(), placeholders);
+    List<String> lore = applyPlaceholders(config.getLore(), placeholders);
+
+    ItemStack item = new ItemBuilder(config.getMaterial())
+      .name(name)
+      .lore(lore)
+      .build();
+
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> {
+      e.setCancelled(true);
+      handleRemove(player, friend, config);
     });
   }
 
-  private void setConfiguredItem(
-    MenuItemConfig config,
-    Map<String, String> placeholders,
-    Consumer<InventoryClickEvent> handler
-  ) {
-    var item = itemFactory.buildItem(config, placeholders);
-    if (item == null) {
+  private void setupInviteButton(Map<String, MenuItemConfig> itemConfigs, Player player, FriendView friend) {
+    MenuItemConfig config = itemConfigs.get(KEY_INVITE);
+    if (config == null || !config.exists()) {
       return;
     }
-    if (handler == null) {
-      setItem(config.getPosition(), item);
-    } else {
-      setItem(config.getPosition(), item, handler);
+
+    String friendName = getFriendName(friend.uniqueId(), friend.name());
+    Map<String, String> placeholders = Map.of("friend", friendName);
+    String name = applyPlaceholders(config.getName(), placeholders);
+    List<String> lore = applyPlaceholders(config.getLore(), placeholders);
+
+    ItemStack item = new ItemBuilder(config.getMaterial())
+      .name(name)
+      .lore(lore)
+      .build();
+
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> {
+      e.setCancelled(true);
+      handleInvite(player, friend, config);
+    });
+  }
+
+  private void setupViewStatsButton(Map<String, MenuItemConfig> itemConfigs, FriendView friend) {
+    MenuItemConfig config = itemConfigs.get(KEY_VIEW_STATS);
+    if (config == null || !config.exists()) {
+      return;
     }
+
+    String friendName = getFriendName(friend.uniqueId(), friend.name());
+    Map<String, String> placeholders = Map.of("friend", friendName);
+    String name = applyPlaceholders(config.getName(), placeholders);
+    List<String> lore = applyPlaceholders(config.getLore(), placeholders);
+
+    ItemStack item = new ItemBuilder(config.getMaterial())
+      .name(name)
+      .lore(lore)
+      .build();
+
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> e.setCancelled(true));
   }
 
-  private void handleRemove(
-    Player player,
-    FriendView selection,
-    MenuItemConfig config,
-    Map<String, String> placeholders
-  ) {
+  private void setupBackButton(Map<String, MenuItemConfig> itemConfigs, Player player) {
+    MenuItemConfig config = itemConfigs.get(KEY_BACK);
+    if (config == null || !config.exists()) {
+      return;
+    }
+
+    ItemStack item = buildStatic(config);
+    setStaticItemWithHandler(config.getPrimarySlot(), item, e -> {
+      e.setCancelled(true);
+      selectionService.clear(player.getUniqueId());
+      plugin.getMenuFactory().openMenu(FriendsMenu.class, player);
+    });
+  }
+
+  private void handleRemove(Player player, FriendView friend, MenuItemConfig config) {
     player.closeInventory();
-    helektra
-      .getFriendService()
-      .removeFriend(player.getUniqueId(), selection.uniqueId())
-      .join();
+    friendService.removeFriend(player.getUniqueId(), friend.uniqueId()).join();
     selectionService.clear(player.getUniqueId());
-    sendMessage(config, "success", player, placeholders);
-    helektra.getMenuFactory().openMenu(FriendsMenu.class, player);
+
+    String friendName = getFriendName(friend.uniqueId(), friend.name());
+    String message = config.getRawString("messages.success", "");
+    if (!message.isEmpty()) {
+      Map<String, String> placeholders = Map.of("friend", friendName);
+      player.sendMessage(applyPlaceholders(message, placeholders));
+    }
+
+    plugin.getMenuFactory().openMenu(FriendsMenu.class, player);
   }
 
-  private void handleInvite(
-    Player player,
-    MenuItemConfig config,
-    Map<String, String> placeholders
-  ) {
+  private void handleInvite(Player player, FriendView friend, MenuItemConfig config) {
     player.closeInventory();
-    String command = optionsConfig.applyPlaceholders(
-      optionsConfig.getCommand("invite"),
-      placeholders
-    );
-    if (!command.isBlank()) {
+
+    String friendName = getFriendName(friend.uniqueId(), friend.name());
+    String command = config.getRawString("command", "");
+    if (!command.isEmpty()) {
+      command = command.replace("{friend}", friendName);
       player.performCommand(command);
     }
-    sendMessage(config, "success", player, placeholders);
-  }
 
-  private void handleBlock(
-    Player player,
-    FriendView selection,
-    MenuItemConfig config,
-    Map<String, String> placeholders
-  ) {
-    player.closeInventory();
-    friendService
-      .updateFriendStatus(
-        player.getUniqueId(),
-        selection.uniqueId(),
-        IFriend.Status.BLOCKED
-      )
-      .join();
-    selectionService.clear(player.getUniqueId());
-    placeholders.put(
-      "status",
-      friendMenuConfig.getStatusLabel(IFriend.Status.BLOCKED)
-    );
-    sendMessage(config, "success", player, placeholders);
-    helektra.getMenuFactory().openMenu(FriendsMenu.class, player);
-  }
-
-  private void handleBack(Player player) {
-    player.closeInventory();
-    helektra.getMenuFactory().openMenu(FriendsMenu.class, player);
-  }
-
-  private void sendMessage(
-    MenuItemConfig config,
-    String key,
-    Player player,
-    Map<String, String> placeholders
-  ) {
-    String message = config.getMessage(key);
-    if (message.isEmpty()) {
-      return;
+    String message = config.getRawString("messages.success", "");
+    if (!message.isEmpty()) {
+      Map<String, String> placeholders = Map.of("friend", friendName);
+      player.sendMessage(applyPlaceholders(message, placeholders));
     }
-    player.sendMessage(optionsConfig.applyPlaceholders(message, placeholders));
+  }
+
+  private String getFriendName(java.util.UUID friendId, String fallback) {
+    String friendName = fallback;
+    if (friendName == null || friendName.isEmpty()) {
+      IProfile friendProfile = profileService.getProfile(friendId).join().orElse(null);
+      if (friendProfile != null) {
+        friendName = friendProfile.getName();
+      } else {
+        friendName = "Unknown";
+      }
+    }
+    return friendName;
+  }
+
+  private ItemStack buildStatic(MenuItemConfig itemConfig) {
+    return new ItemBuilder(itemConfig.getMaterial())
+      .name(itemConfig.getName())
+      .lore(itemConfig.getLore())
+      .build();
+  }
+
+  private String applyPlaceholders(String text, Map<String, String> placeholders) {
+    String result = text;
+    for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+      result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+    }
+    return ColorUtils.translate(result);
+  }
+
+  private List<String> applyPlaceholders(List<String> lines, Map<String, String> placeholders) {
+    List<String> result = new ArrayList<>();
+    for (String line : lines) {
+      result.add(applyPlaceholders(line, placeholders));
+    }
+    return result;
   }
 }

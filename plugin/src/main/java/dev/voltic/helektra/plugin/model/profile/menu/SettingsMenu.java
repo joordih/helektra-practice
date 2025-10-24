@@ -23,15 +23,12 @@ import dev.voltic.helektra.plugin.utils.MenuConfigHelper.MenuItemConfig;
 import dev.voltic.helektra.plugin.utils.TranslationUtils;
 import dev.voltic.helektra.plugin.utils.menu.DynamicMenu;
 import fr.mrmicky.fastinv.ItemBuilder;
-import fr.mrmicky.fastinv.PaginatedFastInv;
 import jakarta.inject.Inject;
 
 public class SettingsMenu extends DynamicMenu {
 
   private static final String MENU_PATH = "settings";
   private static final String KEY_FILLER = "filler";
-  private static final String KEY_PAGINATION_PREVIOUS = "pagination-previous";
-  private static final String KEY_PAGINATION_NEXT = "pagination-next";
   private static final String KEY_LOBBY_TIME = "lobby-time";
 
   private final Helektra plugin;
@@ -80,34 +77,9 @@ public class SettingsMenu extends DynamicMenu {
       addDynamicItemWithHandler(item, e -> handleClick(player, profile, key, e));
     }
 
-    setupPaginationControls(player, profile, itemConfigs);
     fillFiller(itemConfigs.get(KEY_FILLER));
     completeRefresh();
-  }
-
-  private void setupPaginationControls(Player player, IProfile profile, Map<String, MenuItemConfig> itemConfigs) {
-    if (!isPaginated()) return;
-
-    MenuItemConfig previous = itemConfigs.get(KEY_PAGINATION_PREVIOUS);
-    MenuItemConfig next = itemConfigs.get(KEY_PAGINATION_NEXT);
-
-    if (previous != null && previous.exists() && getMenu() instanceof PaginatedFastInv paginatedMenu) {
-      paginatedMenu.setItem(previous.getPrimarySlot(), buildStatic(previous), e -> {
-        e.setCancelled(true);
-        paginatedMenu.openPrevious();
-        trackPageChange();
-        fillFiller(itemConfigs.get(KEY_FILLER));
-      });
-    }
-
-    if (next != null && next.exists() && getMenu() instanceof PaginatedFastInv paginatedMenu) {
-      paginatedMenu.setItem(next.getPrimarySlot(), buildStatic(next), e -> {
-        e.setCancelled(true);
-        paginatedMenu.openNext();
-        trackPageChange();
-        fillFiller(itemConfigs.get(KEY_FILLER));
-      });
-    }
+    setupPaginationItems(player);
   }
 
   private ItemStack buildItem(IProfile profile, MenuItemConfig itemConfig, String key) {

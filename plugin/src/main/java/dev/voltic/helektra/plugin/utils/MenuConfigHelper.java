@@ -60,6 +60,10 @@ public class MenuConfigHelper {
     return menusConfig.getConfig().getInt(path, defaultValue);
   }
 
+  public boolean getBoolean(@NotNull String path, boolean defaultValue) {
+    return menusConfig.getConfig().getBoolean(path, defaultValue);
+  }
+
   public boolean contains(@NotNull String path) {
     return menusConfig.getConfig().contains(path);
   }
